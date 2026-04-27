@@ -48,11 +48,19 @@ public class HabitacionesController : ControllerBase
     [HttpPatch("{id:int}/estado")]
     public async Task<IActionResult> CambiarEstado(int id, [FromBody] CambiarEstadoHabitacionDto dto)
     {
-        var resultado = await _service.CambiarEstadoAsync(id, dto);
-        if (!resultado) return BadRequest(new { mensaje = "No se puede realizar esa transición de estado según las reglas del negocio." });
+        var (exito, mensaje) = await _service.CambiarEstadoAsync(id, dto);
+
+        if (!exito)
+        {
+            // Si el mensaje indica que la habitación no existe se devuelve 404
+            if (mensaje == "Habitación no encontrada.") return NotFound(new { mensaje });
+
+            // Si el mensaje indica que la habitación no tiene un estado actual valido se devuelve 400
+            return BadRequest(new { mensaje });
+        }
 
         var habitacion = await _service.GetByIdAsync(id);
-        return Ok(habitacion);
+        return Ok(new { mensaje, habitacion });
     }
 
     [HttpGet("estado/{nombre}")]

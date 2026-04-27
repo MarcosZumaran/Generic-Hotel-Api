@@ -12,6 +12,6 @@ public interface IHabitacionService
     Task<HabitacionResponseDTO> CreateAsync(CreateHabitacionDto dto);
     Task<HabitacionResponseDTO?> UpdateAsync(int id, UpdateHabitacionDto dto);
     Task<bool> DeleteAsync(int id);
-    Task<bool> CambiarEstadoAsync(int id, CambiarEstadoHabitacionDto dto);
+    Task<(bool Exito, string? Mensaje)> CambiarEstadoAsync(int id, CambiarEstadoHabitacionDto dto);
     Task<List<HabitacionResponseDTO>> GetHabitacionesPorEstadoAsync(string estado);
 }

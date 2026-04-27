@@ -93,30 +93,34 @@ public class HabitacionService : IHabitacionService
         return true;
     }
 
-    public async Task<bool> CambiarEstadoAsync(int id, CambiarEstadoHabitacionDto dto)
+    public async Task<(bool Exito, string? Mensaje)> CambiarEstadoAsync(int id, CambiarEstadoHabitacionDto dto)
     {
         var entity = await _db.Habitaciones
-            .Include(h => h.IdEstadoNavigation)  // necesitamos el nombre del estado actual
+            .Include(h => h.IdEstadoNavigation)
             .FirstOrDefaultAsync(h => h.IdHabitacion == id);
 
-        if (entity == null || entity.IdEstadoNavigation == null) return false;
+        if (entity == null) return (false, "Habitación no encontrada.");
 
-        // Buscar el nombre del estado nuevo
+        if (entity.IdEstadoNavigation == null) return (false, "La habitación no tiene un estado actual válido.");
+
         var estadoNuevoEnt = await _db.CatEstadoHabitacions.FindAsync(dto.IdNuevoEstado);
-        if (estadoNuevoEnt == null) return false;
+        if (estadoNuevoEnt == null) return (false, "El estado destino no existe.");
 
         string estadoActualNombre = entity.IdEstadoNavigation.Nombre;
         string estadoNuevoNombre = estadoNuevoEnt.Nombre;
 
-        // ---- Validación con Lua ----
+        // Validación con Lua
         var result = _lua.CallFunction("validar_estado_habitacion.lua", "validar_transicion", estadoActualNombre, estadoNuevoNombre);
-        if (result == null || result.Length == 0 || !(result[0] is bool valido) || !valido)
+        if (result == null || result.Length < 2 || result[0] is not bool valido)
+            return (false, "Error al evaluar la transición con Lua.");
+
+        if (!valido)
         {
-            // Transición no permitida
-            return false;
+            string mensajeLua = result.Length > 1 && result[1] is string msg ? msg : "Transición no permitida.";
+            return (false, mensajeLua);
         }
 
-        // Procedemos al cambio
+        // Proceder al cambio
         var estadoAnterior = entity.IdEstado;
         entity.IdEstado = dto.IdNuevoEstado;
         entity.FechaUltimoCambio = DateTime.Now;
@@ -133,7 +137,7 @@ public class HabitacionService : IHabitacionService
         });
 
         await _db.SaveChangesAsync();
-        return true;
+        return (true, "Estado cambiado exitosamente.");
     }
 
     public async Task<List<HabitacionResponseDTO>> GetHabitacionesPorEstadoAsync(string estado)

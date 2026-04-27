@@ -10,12 +10,12 @@ local transiciones = {
 
 function validar_trancision(estado_actual, estado_nuevo)
     if transiciones[estado_actual] == nil then
-        return false;
+        return false, "Estado actual desconocido: " .. estado_actual;
     end
     for _, destino in ipairs(transiciones[estado_actual]) do
         if destino == estado_nuevo then
-            return true;
+            return true, "Transición Exitosa de " .. estado_actual .. " a " .. estado_nuevo .. ".";
         end
     end
-    return false;
+    return false, "Transición no válida de " .. estado_actual .. " a " .. estado_nuevo .. " , accion no permitida.";
 end
