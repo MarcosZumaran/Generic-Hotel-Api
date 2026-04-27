@@ -533,3 +533,6 @@ obj/
 /wwwroot/node_modules
 
 # End of https://www.toptal.com/developers/gitignore/api/csharp,aspnetcore,dotnetcore
+
+obj/Debug/net10.0/LaRicaNoche.Api.AssemblyInfoInputs.cache
+obj/Debug/net10.0/LaRicaNoche.Api.AssemblyInfo.cs
