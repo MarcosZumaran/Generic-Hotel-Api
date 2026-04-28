@@ -8,7 +8,7 @@ local transiciones = {
     ["Mantenimiento"] = {"Disponible", "Limpieza"}
 };
 
-function validar_trancision(estado_actual, estado_nuevo)
+function Validar_trancision(estado_actual, estado_nuevo)
     if transiciones[estado_actual] == nil then
         return false, "Estado actual desconocido: " .. estado_actual;
     end

@@ -110,7 +110,7 @@ public class HabitacionService : IHabitacionService
         string estadoNuevoNombre = estadoNuevoEnt.Nombre;
 
         // Validación con Lua
-        var result = _lua.CallFunction("validar_estado_habitacion.lua", "validar_transicion", estadoActualNombre, estadoNuevoNombre);
+        var result = _lua.CallFunction("validar_estado_habitacion.lua", "Validar_trancision", estadoActualNombre, estadoNuevoNombre);
         if (result == null || result.Length < 2 || result[0] is not bool valido)
             return (false, "Error al evaluar la transición con Lua.");
 
