@@ -1,13 +1,23 @@
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using LaRicaNoche.Api.Mappings;
+using LaRicaNoche.Api.Data;
+using LaRicaNoche.Api.Services.Interfaces;
+using LaRicaNoche.Api.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// DbContext
+builder.Services.AddDbContext<LaRicaNocheDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // NLua
 builder.Services.AddSingleton<ILuaService, LuaService>();
 
-// Controladores de la API
+// Mappers
+builder.Services.AddSingleton<CatEstadoHabitacionMapper>();
+
+// Servicios
+builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
 
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
@@ -21,6 +31,6 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(); // /scalar/v1
 }
 
-app.UseHttpsRedirection();
 app.MapControllers();
+
 app.Run();
