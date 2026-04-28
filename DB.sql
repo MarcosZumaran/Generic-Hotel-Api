@@ -275,6 +275,7 @@ VALUES ('Matrimonial', 2, 'Habitación estándar para dos personas', 50.00);
 -- Cliente anónimo por defecto (para boletas menores a S/700)
 INSERT INTO clientes (tipo_documento, documento, nombres, apellidos, nacionalidad)
 VALUES ('0', '00000000', 'CLIENTE', 'ANONIMO', 'PERUANA');
+GO
 
 -- =============================================
 -- VISTAS ÚTILES (actualizadas)
