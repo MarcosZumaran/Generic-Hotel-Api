@@ -17,11 +17,13 @@ builder.Services.AddSingleton<ILuaService, LuaService>();
 builder.Services.AddSingleton<CatEstadoHabitacionMapper>();
 builder.Services.AddSingleton<CatRolUsuarioMapper>();
 builder.Services.AddSingleton<CatMetodoPagoMapper>();
+builder.Services.AddSingleton<CatTipoDocumentoMapper>();
 
 // Servicios
 builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
 builder.Services.AddScoped<ICatRolUsuarioService, CatRolUsuarioService>();
 builder.Services.AddScoped<ICatMetodoPagoService, CatMetodoPagoService>();
+builder.Services.AddScoped<ICatTipoDocumentoService, CatTipoDocumentoService>();
 
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
