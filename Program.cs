@@ -18,12 +18,14 @@ builder.Services.AddSingleton<CatEstadoHabitacionMapper>();
 builder.Services.AddSingleton<CatRolUsuarioMapper>();
 builder.Services.AddSingleton<CatMetodoPagoMapper>();
 builder.Services.AddSingleton<CatTipoDocumentoMapper>();
+builder.Services.AddSingleton<CatTipoComprobanteMapper>();
 
 // Servicios
 builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
 builder.Services.AddScoped<ICatRolUsuarioService, CatRolUsuarioService>();
 builder.Services.AddScoped<ICatMetodoPagoService, CatMetodoPagoService>();
 builder.Services.AddScoped<ICatTipoDocumentoService, CatTipoDocumentoService>();
+builder.Services.AddScoped<ICatTipoComprobanteService, CatTipoComprobanteService>();
 
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
