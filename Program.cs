@@ -4,6 +4,9 @@ using LaRicaNoche.Api.Mappings;
 using LaRicaNoche.Api.Data;
 using LaRicaNoche.Api.Services.Interfaces;
 using LaRicaNoche.Api.Services.Implementations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,7 @@ builder.Services.AddSingleton<CatTipoComprobanteMapper>();
 builder.Services.AddSingleton<CatAfectacionIgvMapper>();
 builder.Services.AddSingleton<CatEstadoSunatMapper>();
 builder.Services.AddSingleton<TiposHabitacionMapper>();
+builder.Services.AddSingleton<UsuarioMapper>();
 
 // Servicios
 builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
@@ -32,6 +36,33 @@ builder.Services.AddScoped<ICatTipoComprobanteService, CatTipoComprobanteService
 builder.Services.AddScoped<ICatAfectacionIgvService, CatAfectacionIgvService>();
 builder.Services.AddScoped<ICatEstadoSunatService, CatEstadoSunatService>();
 builder.Services.AddScoped<ITiposHabitacionService, TiposHabitacionService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+
+// Configuración JWT
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
+
+builder.Services.AddAuthorization();
+
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -43,7 +74,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference(); // /scalar/v1
 }
-
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
