@@ -6,7 +6,7 @@
 --   3. tipo_comprobante (string)    "03" (Boleta) o "01" (Factura)
 -- Retorna: tabla { tasa = number, monto = number }
 
-local function calculate_igv_hotel(afectacion_codigo, base_imponible, tipo_comprobante)
+function Calculate_igv_hotel(afectacion_codigo, base_imponible, tipo_comprobante)
     local tasas = {
         ["10"] = 18,   -- Gravado estándar
         ["20"] = 0,    -- Exonerado

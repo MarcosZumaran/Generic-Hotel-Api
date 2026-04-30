@@ -91,8 +91,8 @@ public class EstanciaService : IEstanciaService
         decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
         try
         {
-            // Llamar al script Lua "hotel_tax_rules.lua", función "calculate_igv_hotel"
-            var resultado = _lua.CallFunction("hotel_tax_rules.lua", "calculate_igv_hotel",
+            // Llamar al script Lua "hotel_tax_rules.lua", función "Calculate_igv_hotel"
+            var resultado = _lua.CallFunction("hotel_tax_rules.lua", "Calculate_igv_hotel",
                 "10", montoSinIgv, "03");
 
             // El resultado es object[]; el primer elemento es una LuaTable
