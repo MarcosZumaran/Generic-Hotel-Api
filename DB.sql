@@ -316,4 +316,15 @@ INNER JOIN cat_estado_habitacion e ON h.id_estado = e.id_estado
 INNER JOIN tipos_habitacion th ON h.id_tipo = th.id_tipo;
 GO
 
+-- creacion de la tabla envios cierre caja
+CREATE TABLE cierre_caja_envios (
+    fecha DATE PRIMARY KEY,
+    id_estado_sunat INT DEFAULT 1,
+    fecha_envio DATETIME NULL,
+    intentos_envio INT DEFAULT 0,
+    hash_xml NVARCHAR(64) NULL,
+    FOREIGN KEY (id_estado_sunat) REFERENCES cat_estado_sunat(codigo)
+);
+GO
+
 PRINT 'Base de datos LaRicaNocheDB creada/actualizada exitosamente.';
