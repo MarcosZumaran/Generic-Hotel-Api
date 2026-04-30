@@ -11,7 +11,7 @@ public class LuaTestController : ControllerBase
     [HttpGet("validar-cliente")]
     public IActionResult ValidarCliente(string documento, string tipo)
     {
-        var result = _lua.CallFunction("validar_cliente.lua", "validar", documento, tipo);
+        var result = _lua.CallFunction("validar_cliente.lua", "Validar", documento, tipo);
         bool valido = result.Length > 0 && Convert.ToBoolean(result[0]);
         return Ok(new { documento, tipo, valido });
     }
