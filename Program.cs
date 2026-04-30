@@ -46,6 +46,7 @@ builder.Services.AddScoped<IEstanciaService, EstanciaService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IComprobanteService, ComprobanteService>();
 builder.Services.AddScoped<IReporteService, ReporteService>();
+builder.Services.AddScoped<IVentaService, VentaService>();
 
 // Configuración JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -70,6 +71,17 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// habilitar frontend para consumir la API, http://localhost:5173
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddAuthorization();
 
 //  Controladores y OpenAPI
@@ -83,6 +95,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference(); // /scalar/v1
 }
+
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
