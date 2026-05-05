@@ -9,9 +9,9 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class PdfService : IPdfService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
 
-    public PdfService(HotelGenericoDbContext db)
+    public PdfService(HotelDbContext db)
     {
         _db = db;
         QuestPDF.Settings.License = LicenseType.Community;

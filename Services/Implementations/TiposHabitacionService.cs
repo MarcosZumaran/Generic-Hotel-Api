@@ -9,10 +9,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class TiposHabitacionService : ITiposHabitacionService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly TiposHabitacionMapper _mapper;
 
-    public TiposHabitacionService(HotelGenericoDbContext db, TiposHabitacionMapper mapper)
+    public TiposHabitacionService(HotelDbContext db, TiposHabitacionMapper mapper)
     {
         _db = db;
         _mapper = mapper;

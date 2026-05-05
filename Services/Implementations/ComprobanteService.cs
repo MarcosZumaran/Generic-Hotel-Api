@@ -7,9 +7,9 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class ComprobanteService : IComprobanteService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
 
-    public ComprobanteService(HotelGenericoDbContext db) => _db = db;
+    public ComprobanteService(HotelDbContext db) => _db = db;
 
     public async Task<IEnumerable<ComprobanteResponseDto>> GetAllAsync()
     {

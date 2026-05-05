@@ -9,10 +9,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class CatTipoComprobanteService : ICatTipoComprobanteService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly CatTipoComprobanteMapper _mapper;
 
-    public CatTipoComprobanteService(HotelGenericoDbContext db, CatTipoComprobanteMapper mapper)
+    public CatTipoComprobanteService(HotelDbContext db, CatTipoComprobanteMapper mapper)
     {
         _db = db;
         _mapper = mapper;

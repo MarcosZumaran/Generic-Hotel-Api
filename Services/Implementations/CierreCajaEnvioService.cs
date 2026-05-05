@@ -8,9 +8,9 @@ namespace HotelGenericoApi.Services.Implementations
 {
     public class CierreCajaEnvioService : ICierreCajaEnvioService
     {
-        private readonly HotelGenericoDbContext _db;
+        private readonly HotelDbContext _db;
 
-        public CierreCajaEnvioService(HotelGenericoDbContext db)
+        public CierreCajaEnvioService(HotelDbContext db)
         {
             _db = db;
         }

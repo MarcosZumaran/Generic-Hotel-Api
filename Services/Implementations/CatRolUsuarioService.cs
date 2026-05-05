@@ -9,10 +9,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class CatRolUsuarioService : ICatRolUsuarioService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly CatRolUsuarioMapper _mapper;
 
-    public CatRolUsuarioService(HotelGenericoDbContext db, CatRolUsuarioMapper mapper)
+    public CatRolUsuarioService(HotelDbContext db, CatRolUsuarioMapper mapper)
     {
         _db = db;
         _mapper = mapper;

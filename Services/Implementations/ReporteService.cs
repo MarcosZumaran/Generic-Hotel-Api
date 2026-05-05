@@ -7,9 +7,9 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class ReporteService : IReporteService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
 
-    public ReporteService(HotelGenericoDbContext db) => _db = db;
+    public ReporteService(HotelDbContext db) => _db = db;
 
     public async Task<IEnumerable<CierreCajaResponseDto>> GetCierreCajaAsync(DateOnly? fecha)
     {

@@ -9,10 +9,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class CatEstadoSunatService : ICatEstadoSunatService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly CatEstadoSunatMapper _mapper;
 
-    public CatEstadoSunatService(HotelGenericoDbContext db, CatEstadoSunatMapper mapper)
+    public CatEstadoSunatService(HotelDbContext db, CatEstadoSunatMapper mapper)
     {
         _db = db;
         _mapper = mapper;

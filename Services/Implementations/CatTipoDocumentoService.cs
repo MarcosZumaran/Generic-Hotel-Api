@@ -9,10 +9,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class CatTipoDocumentoService : ICatTipoDocumentoService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly CatTipoDocumentoMapper _mapper;
 
-    public CatTipoDocumentoService(HotelGenericoDbContext db, CatTipoDocumentoMapper mapper)
+    public CatTipoDocumentoService(HotelDbContext db, CatTipoDocumentoMapper mapper)
     {
         _db = db;
         _mapper = mapper;

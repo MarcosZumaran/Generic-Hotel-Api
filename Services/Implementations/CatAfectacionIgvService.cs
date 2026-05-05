@@ -9,10 +9,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class CatAfectacionIgvService : ICatAfectacionIgvService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly CatAfectacionIgvMapper _mapper;
 
-    public CatAfectacionIgvService(HotelGenericoDbContext db, CatAfectacionIgvMapper mapper)
+    public CatAfectacionIgvService(HotelDbContext db, CatAfectacionIgvMapper mapper)
     {
         _db = db;
         _mapper = mapper;

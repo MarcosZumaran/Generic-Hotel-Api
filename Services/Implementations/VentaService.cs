@@ -10,10 +10,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class VentaService : IVentaService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly ILuaService _lua;
 
-    public VentaService(HotelGenericoDbContext db, ILuaService lua)
+    public VentaService(HotelDbContext db, ILuaService lua)
     {
         _db = db;
         _lua = lua;

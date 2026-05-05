@@ -9,10 +9,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class CatMetodoPagoService : ICatMetodoPagoService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly CatMetodoPagoMapper _mapper;
 
-    public CatMetodoPagoService(HotelGenericoDbContext db, CatMetodoPagoMapper mapper)
+    public CatMetodoPagoService(HotelDbContext db, CatMetodoPagoMapper mapper)
     {
         _db = db;
         _mapper = mapper;

@@ -15,11 +15,11 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class UsuarioService : IUsuarioService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly UsuarioMapper _mapper;
     private readonly IConfiguration _configuration;
 
-    public UsuarioService(HotelGenericoDbContext db, UsuarioMapper mapper, IConfiguration configuration)
+    public UsuarioService(HotelDbContext db, UsuarioMapper mapper, IConfiguration configuration)
     {
         _db = db;
         _mapper = mapper;

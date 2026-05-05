@@ -10,10 +10,10 @@ namespace HotelGenericoApi.Services.Implementations;
 
 public class ProductoService : IProductoService
 {
-    private readonly HotelGenericoDbContext _db;
+    private readonly HotelDbContext _db;
     private readonly ProductoMapper _mapper;
 
-    public ProductoService(HotelGenericoDbContext db, ProductoMapper mapper)
+    public ProductoService(HotelDbContext db, ProductoMapper mapper)
     {
         _db = db;
         _mapper = mapper;
