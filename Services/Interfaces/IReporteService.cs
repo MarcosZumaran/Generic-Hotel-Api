@@ -6,4 +6,6 @@ public interface IReporteService
 {
     Task<IEnumerable<CierreCajaResponseDto>> GetCierreCajaAsync(DateOnly? fecha);
     Task<IEnumerable<EstadoHabitacionResponseDto>> GetEstadoHabitacionesAsync();
+    Task<byte[]> ExportarCierreCajaExcelAsync(DateOnly? fecha);
+    Task<byte[]> ExportarEstadoHabitacionesExcelAsync();
 }

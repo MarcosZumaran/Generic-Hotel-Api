@@ -40,4 +40,18 @@ public class ReporteController : ControllerBase
         var result = await _cierreCajaEnvioService.MarcarComoEnviadoAsync(fecha);
         return result ? NoContent() : BadRequest();
     }
+
+    [HttpGet("cierre-caja/excel")]
+    public async Task<IActionResult> ExportarCierreCajaExcel([FromQuery] DateOnly? fecha)
+    {
+        var bytes = await _service.ExportarCierreCajaExcelAsync(fecha);
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"cierre_caja_{fecha:yyyyMMdd}.xlsx");
+    }
+
+    [HttpGet("estado-habitaciones/excel")]
+    public async Task<IActionResult> ExportarEstadoHabitacionesExcel()
+    {
+        var bytes = await _service.ExportarEstadoHabitacionesExcelAsync();
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "estado_habitaciones.xlsx");
+    }
 }
