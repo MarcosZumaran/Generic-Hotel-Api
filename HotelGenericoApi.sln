@@ -5,7 +5,7 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HotelGenericoApi", "HotelGenericoApi.csproj", "{9A4BB45E-CF37-6331-7120-BC9F8DFF8E54}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HotelGenericoApi.Tests", "..\HotelGenericoApi.Tests\HotelGenericoApi.Tests.csproj", "{42CCF594-4401-4225-87B2-79DABB41460C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HotelGenericoApi.Tests", "Tests\HotelGenericoApi.Tests.csproj", "{42CCF594-4401-4225-87B2-79DABB41460C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
