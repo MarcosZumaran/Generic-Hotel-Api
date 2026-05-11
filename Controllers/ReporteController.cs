@@ -54,4 +54,11 @@ public class ReporteController : ControllerBase
         var bytes = await _service.ExportarEstadoHabitacionesExcelAsync();
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "estado_habitaciones.xlsx");
     }
+
+    [HttpGet("top-productos")]
+    public async Task<IActionResult> GetTopProductos([FromQuery] int dias = 30)
+    {
+        var result = await _service.GetTopProductosAsync(dias);
+        return Ok(result);
+    }
 }

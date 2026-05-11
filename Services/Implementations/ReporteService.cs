@@ -90,4 +90,22 @@ public class ReporteService : IReporteService
         workbook.SaveAs(ms);
         return ms.ToArray();
     }
+
+    public async Task<IEnumerable<TopProductoDto>> GetTopProductosAsync(int dias = 30)
+    {
+        var fechaLimite = DateTime.UtcNow.AddDays(-dias);
+
+        return await _db.ItemsEstancia
+            .Where(i => i.FechaRegistro >= fechaLimite)
+            .GroupBy(i => i.IdProductoNavigation.Nombre)
+            .Select(g => new TopProductoDto
+            {
+                Nombre = g.Key,
+                CantidadTotal = g.Sum(i => i.Cantidad),
+                IngresoTotal = g.Sum(i => i.Subtotal ?? 0)
+            })
+            .OrderByDescending(t => t.CantidadTotal)
+            .Take(5)
+            .ToListAsync();
+    }
 }
