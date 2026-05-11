@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using HotelGenericoApi.Data;
 using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Services.Interfaces;
+using HotelGenericoApi.Extensions;
 
 namespace HotelGenericoApi.Services.Implementations;
 
@@ -58,5 +59,25 @@ public class ComprobanteService : IComprobanteService
         entity.HashXml = hashXml;
         await _db.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<PagedResult<ComprobanteResponseDto>> GetPagedAsync(int page, int pageSize)
+    {
+        var query = _db.Comprobantes
+            .Include(c => c.IdEstadoSunatNavigation)
+            .AsNoTracking()
+            .Select(c => new ComprobanteResponseDto(
+                c.IdComprobante, c.IdEstancia, c.IdVenta,
+                c.TipoComprobante, c.Serie, c.Correlativo,
+                c.FechaEmision, c.MontoTotal, c.IgvMonto,
+                c.ClienteDocumentoTipo, c.ClienteDocumentoNum,
+                c.ClienteNombre, c.MetodoPago,
+                c.IdEstadoSunat,
+                c.IdEstadoSunatNavigation != null ? c.IdEstadoSunatNavigation.Descripcion : null,
+                c.FechaEnvio, c.IntentosEnvio
+            ));
+
+        var paged = await query.ToPagedResultAsync(page, pageSize);
+        return paged;
     }
 }

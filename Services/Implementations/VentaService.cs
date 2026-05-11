@@ -5,6 +5,7 @@ using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 using NLua;
+using HotelGenericoApi.Extensions;
 
 namespace HotelGenericoApi.Services.Implementations;
 
@@ -186,5 +187,37 @@ public class VentaService : IVentaService
             .Where(c => c.Serie == "B001")
             .MaxAsync(c => (int?)c.Correlativo) ?? 0;
         return ultimo + 1;
+    }
+
+    public async Task<PagedResult<VentaResponseDto>> GetPagedAsync(int page, int pageSize)
+    {
+        var query = _db.Ventas
+            .Include(v => v.IdClienteNavigation)
+            .Include(v => v.ItemsVenta).ThenInclude(i => i.IdProductoNavigation)
+            .AsNoTracking()
+            .OrderByDescending(v => v.FechaVenta)
+            .Select(v => new VentaResponseDto
+            {
+                IdVenta = v.IdVenta,
+                IdCliente = v.IdCliente,
+                ClienteNombre = v.IdClienteNavigation != null
+                    ? $"{v.IdClienteNavigation.Nombres} {v.IdClienteNavigation.Apellidos}"
+                    : "CLIENTE ANÓNIMO",
+                FechaVenta = v.FechaVenta ?? DateTime.MinValue,
+                Total = v.Total,
+                MetodoPago = v.MetodoPago,
+                Items = v.ItemsVenta.Select(i => new ItemVentaResponseDto
+                {
+                    IdItem = i.IdItem,
+                    IdProducto = i.IdProducto ?? 0,
+                    NombreProducto = i.IdProductoNavigation != null ? i.IdProductoNavigation.Nombre : "",
+                    Cantidad = i.Cantidad,
+                    PrecioUnitario = i.PrecioUnitario,
+                    Subtotal = i.Subtotal ?? 0
+                }).ToList()
+            });
+
+        var paged = await query.ToPagedResultAsync(page, pageSize);
+        return paged;
     }
 }

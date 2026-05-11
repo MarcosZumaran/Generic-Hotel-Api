@@ -4,6 +4,7 @@ using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Mappings;
 using HotelGenericoApi.Services.Interfaces;
+using HotelGenericoApi.Extensions;
 
 namespace HotelGenericoApi.Services.Implementations;
 
@@ -68,5 +69,19 @@ public class ClienteService : IClienteService
         _db.Clientes.Remove(entity);
         await _db.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<PagedResult<ClienteResponseDto>> GetPagedAsync(int page, int pageSize)
+    {
+        var query = _db.Clientes.AsNoTracking();
+        var paged = await query.ToPagedResultAsync(page, pageSize);
+        var dtos = paged.Items.Select(_mapper.ToResponse).ToList();
+        return new PagedResult<ClienteResponseDto>
+        {
+            Items = dtos,
+            TotalItems = paged.TotalItems,
+            Page = paged.Page,
+            PageSize = paged.PageSize
+        };
     }
 }
