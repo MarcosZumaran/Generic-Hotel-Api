@@ -51,7 +51,8 @@ public partial class HotelDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
-            optionsBuilder.UseSqlServer("Name=DefaultConnection");
+            optionsBuilder.UseSqlServer("Name=DefaultConnection")
+                .UseSnakeCaseNamingConvention();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -338,10 +339,12 @@ public partial class HotelDbContext : DbContext
             entity.ToTable("usuario");
             entity.HasKey(e => e.IdUsuario);
             entity.HasIndex(e => e.Username).IsUnique();
-            entity.Property(e => e.Username).HasMaxLength(50);
-            entity.Property(e => e.PasswordHash).HasMaxLength(255);
-            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.EstaActivo).HasDefaultValue(true);
+            entity.Property(e => e.IdUsuario).HasColumnName("id_usuario").ValueGeneratedOnAdd();
+            entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(255).IsRequired();
+            entity.Property(e => e.IdRol).HasColumnName("id_rol").IsRequired();
+            entity.Property(e => e.FechaCreacion).HasColumnName("fecha_creacion").HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.EstaActivo).HasColumnName("esta_activo").HasDefaultValue(true);
             entity.HasOne(e => e.Rol).WithMany(r => r.Usuarios).HasForeignKey(e => e.IdRol).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasMany(e => e.Reservas).WithOne(r => r.Usuario).HasForeignKey(e => e.IdUsuario);
             entity.HasMany(e => e.Ventas).WithOne(v => v.Usuario).HasForeignKey(e => e.IdUsuario).OnDelete(DeleteBehavior.ClientSetNull);
@@ -350,7 +353,7 @@ public partial class HotelDbContext : DbContext
         modelBuilder.Entity<VCierreCajaDiario>(entity =>
         {
             entity.HasNoKey().ToView("v_cierre_caja_diario");
-            entity.Property(e => e.Concepto).HasMaxLength(9);
+            entity.Property(e => e.Ingresos).HasColumnType("decimal(21,2)");
         });
 
         modelBuilder.Entity<VEstadoHabitacione>(entity =>
@@ -385,11 +388,12 @@ public partial class HotelDbContext : DbContext
         {
             entity.ToTable("login_attempt");
             entity.HasKey(e => e.IdLoginAttempt);
-            entity.Property(e => e.IpAddress).HasMaxLength(50);
-            entity.Property(e => e.Username).HasMaxLength(100);
-            entity.Property(e => e.UserAgent).HasMaxLength(500);
-            entity.Property(e => e.AttemptedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Succeeded).HasDefaultValue(false);
+            entity.Property(e => e.IdLoginAttempt).HasColumnName("id_login_attempt").ValueGeneratedOnAdd();
+            entity.Property(e => e.IpAddress).HasColumnName("ip_address").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(100);
+            entity.Property(e => e.AttemptedAt).HasColumnName("attempted_at").HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Succeeded).HasColumnName("succeeded").HasDefaultValue(false);
+            entity.Property(e => e.UserAgent).HasColumnName("user_agent").HasMaxLength(500);
         });
 
         OnModelCreatingPartial(modelBuilder);

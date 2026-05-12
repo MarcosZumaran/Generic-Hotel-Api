@@ -14,7 +14,10 @@ using Microsoft.AspNetCore.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 // DbContext
-builder.Services.AddDbContext<HotelDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<HotelDbContext>(options => 
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+    .UseSnakeCaseNamingConvention()    
+);
 
 // NLua
 builder.Services.AddSingleton<ILuaService, LuaService>();
@@ -55,7 +58,7 @@ builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IConfiguracionHotelService, ConfiguracionHotelService>();
 builder.Services.AddScoped<IValidadorEstadoService, ValidadorEstadoService>();
 
-// Setup de inicio si no hay un usuario admin
+// Setup
 builder.Services.AddScoped<SetupService>();
 
 // Transacciones
@@ -77,7 +80,7 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// Configuración JWT
+// JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
 
@@ -100,7 +103,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// habilitar frontend para consumir la API, http://localhost:5173
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -113,11 +116,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddAuthorization();
-
-// SignalR
 builder.Services.AddSignalR();
-
-//  Controladores y OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
@@ -126,7 +125,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference(); // /scalar/v1
+    app.MapScalarApiReference();
 }
 
 app.UseCors();
@@ -134,7 +133,8 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHub<HabitacionHub>("/hub/habitaciones");
+// La ruta debe coincidir con el frontend: /hotelhub
+app.MapHub<HabitacionHub>("/hotelhub");
 app.MapControllers();
 
 app.Run();

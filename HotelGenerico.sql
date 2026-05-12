@@ -451,16 +451,17 @@ WHERE estado = 'Activa'
 GROUP BY CAST(fecha_checkin AS DATE);
 GO
 
+-- Tabla de intentos de inicio de sesión
 CREATE TABLE login_attempt (
     id_login_attempt INT IDENTITY(1,1) PRIMARY KEY,
-    ip_address VARCHAR(50) NOT NULL,
-    username VARCHAR(100) NULL,
-    attempted_at DATETIME NOT NULL DEFAULT GETDATE(),
+    ip_address NVARCHAR(50) NOT NULL,
+    username NVARCHAR(100) NULL,
+    attempted_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     succeeded BIT NOT NULL DEFAULT 0,
-    user_agent VARCHAR(500) NULL
+    user_agent NVARCHAR(500) NULL
 );
 
-CREATE INDEX IX_login_attempt_ip_at ON login_attempt(ip_address, attempted_at);
+CREATE INDEX ix_login_attempt_ip_fecha ON login_attempt(ip_address, attempted_at);
 CREATE INDEX IX_login_attempt_username_at ON login_attempt(username, attempted_at);
 GO
 
