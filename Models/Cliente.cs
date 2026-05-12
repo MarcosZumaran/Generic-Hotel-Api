@@ -29,13 +29,13 @@ public partial class Cliente
 
     public DateTime? FechaVerificacionReniec { get; set; }
 
-    public virtual ICollection<Estancia> Estancia { get; set; } = new List<Estancia>();
+    public virtual TipoDocumento TipoDocumentoRel { get; set; } = null!;
 
-    public virtual ICollection<Huespede> Huespedes { get; set; } = new List<Huespede>();
+    public virtual ICollection<Estancium> Estancias { get; set; } = new List<Estancium>();
+
+    public virtual ICollection<Huesped> Huespedes { get; set; } = new List<Huesped>();
 
     public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
 
-    public virtual CatTipoDocumento TipoDocumentoNavigation { get; set; } = null!;
-
-    public virtual ICollection<Venta> Venta { get; set; } = new List<Venta>();
+    public virtual ICollection<Venta> Ventas { get; set; } = new List<Venta>();
 }

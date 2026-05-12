@@ -47,8 +47,8 @@ namespace HotelGenericoApi.Services.Implementations
         public async Task<IEnumerable<EstanciaResponseDto>> GetAllAsync()
         {
             return await _db.Estancias
-                .Include(e => e.IdHabitacionNavigation)
-                .Include(e => e.IdClienteTitularNavigation)
+                .Include(e => e.Habitacion)
+                .Include(e => e.ClienteTitular)
                 .AsNoTracking()
                 .Select(e => MapToResponse(e))
                 .ToListAsync();
@@ -57,8 +57,8 @@ namespace HotelGenericoApi.Services.Implementations
         public async Task<EstanciaResponseDto?> GetByIdAsync(int id)
         {
             var e = await _db.Estancias
-                .Include(e => e.IdHabitacionNavigation)
-                .Include(e => e.IdClienteTitularNavigation)
+                .Include(e => e.Habitacion)
+                .Include(e => e.ClienteTitular)
                 .FirstOrDefaultAsync(e => e.IdEstancia == id);
 
             return e is not null ? MapToResponse(e) : null;
@@ -67,12 +67,12 @@ namespace HotelGenericoApi.Services.Implementations
         public async Task<EstanciaResponseDto> CheckInAsync(CheckInDto dto, int? idUsuario)
         {
             var habitacion = await _db.Habitaciones
-                .Include(h => h.IdEstadoNavigation)
-                .Include(h => h.IdTipoNavigation)
+                .Include(h => h.Estado)
+                .Include(h => h.TipoHabitacion)
                 .FirstOrDefaultAsync(h => h.IdHabitacion == dto.IdHabitacion);
 
             if (habitacion is null) throw new InvalidOperationException("La habitación no existe.");
-            if (habitacion.IdEstadoNavigation == null || !habitacion.IdEstadoNavigation.PermiteCheckin)
+            if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
                 throw new InvalidOperationException("La habitación no está disponible para check‑in.");
 
             // Validar reserva si se proporciona
@@ -119,13 +119,13 @@ namespace HotelGenericoApi.Services.Implementations
                 .Where(t => t.IdTipoHabitacion == habitacion.IdTipo &&
                             (t.FechaInicio == null || t.FechaInicio <= DateOnly.FromDateTime(DateTime.UtcNow)) &&
                             (t.FechaFin == null || t.FechaFin >= DateOnly.FromDateTime(DateTime.UtcNow)))
-                .OrderByDescending(t => t.IdTemporadaNavigation != null ? t.IdTemporadaNavigation.Multiplier : 1)
+                .OrderByDescending(t => t.Temporada != null ? t.Temporada.Multiplicador : 1)
                 .FirstOrDefaultAsync();
 
             decimal precioNoche = tarifa?.Precio ?? habitacion.PrecioNoche;
             decimal montoSinIgv = precioNoche * noches;
 
-            var configuracion = await _db.ConfiguracionHotels.FirstOrDefaultAsync();
+            var configuracion = await _db.Configuracion.FirstOrDefaultAsync();
             decimal tasaDefecto = configuracion?.TasaIgvHotel ?? 10.5m;
             decimal tasaIgv = tasaDefecto;
             decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
@@ -147,7 +147,7 @@ namespace HotelGenericoApi.Services.Implementations
 
             decimal montoTotal = montoSinIgv + igvCalculado;
 
-            var estancia = new Estancia
+            var estancia = new Estancium
             {
                 IdHabitacion = dto.IdHabitacion,
                 IdClienteTitular = cliente.IdCliente,
@@ -160,10 +160,10 @@ namespace HotelGenericoApi.Services.Implementations
             };
             _db.Estancias.Add(estancia);
 
-            var estadoOcupada = await _db.CatEstadoHabitacions.FirstOrDefaultAsync(e => e.PermiteCheckout);
+            var estadoOcupada = await _db.EstadosHabitacion.FirstOrDefaultAsync(e => e.PermiteCheckout);
             if (estadoOcupada is not null)
             {
-                int estadoAnterior = habitacion.IdEstado ?? 0;
+                int estadoAnterior = habitacion.IdEstado;
                 bool permitida = await _validador.EsTransicionValidaAsync(estadoAnterior, estadoOcupada.IdEstado);
                 if (!permitida) throw new InvalidOperationException("Transición de estado no permitida.");
 
@@ -171,13 +171,13 @@ namespace HotelGenericoApi.Services.Implementations
                 habitacion.FechaUltimoCambio = DateTime.UtcNow;
                 habitacion.UsuarioCambio = idUsuario;
 
-                _db.HistorialEstadoHabitacions.Add(new HistorialEstadoHabitacion
+                _db.HistorialesEstadoHabitacion.Add(new HistorialEstadoHabitacion
                 {
                     IdHabitacion = habitacion.IdHabitacion,
                     IdEstadoAnterior = estadoAnterior,
                     IdEstadoNuevo = estadoOcupada.IdEstado,
                     FechaCambio = DateTime.UtcNow,
-                    IdUsuario = idUsuario,
+                    IdUsuario = idUsuario ?? 0,
                     Observacion = "Check‑In automático"
                 });
             }
@@ -210,15 +210,15 @@ namespace HotelGenericoApi.Services.Implementations
             _db.Comprobantes.Add(comprobante);
             await _db.SaveChangesAsync();
 
-            await _db.Entry(estancia).Reference(e => e.IdHabitacionNavigation).LoadAsync();
-            await _db.Entry(estancia).Reference(e => e.IdClienteTitularNavigation).LoadAsync();
+            await _db.Entry(estancia).Reference(e => e.Habitacion).LoadAsync();
+            await _db.Entry(estancia).Reference(e => e.ClienteTitular).LoadAsync();
             return MapToResponse(estancia);
         }
 
         public async Task<EstanciaResponseDto> CheckOutAsync(int idEstancia, int? idUsuario)
         {
             var estancia = await _db.Estancias
-                .Include(e => e.IdHabitacionNavigation)
+                .Include(e => e.Habitacion)
                 .FirstOrDefaultAsync(e => e.IdEstancia == idEstancia);
 
             if (estancia is null) throw new InvalidOperationException("La estancia no existe.");
@@ -227,11 +227,11 @@ namespace HotelGenericoApi.Services.Implementations
             estancia.Estado = ESTADO_FINALIZADA;
             estancia.FechaCheckoutReal = DateTime.UtcNow;
 
-            var estadoLimpieza = await _db.CatEstadoHabitacions.FirstOrDefaultAsync(e => e.Nombre == "Limpieza");
-            if (estancia.IdHabitacionNavigation is not null && estadoLimpieza is not null)
+            var estadoLimpieza = await _db.EstadosHabitacion.FirstOrDefaultAsync(e => e.Nombre == "Limpieza");
+            if (estancia.Habitacion is not null && estadoLimpieza is not null)
             {
-                var habitacion = estancia.IdHabitacionNavigation;
-                int estadoAnterior = habitacion.IdEstado ?? 0;
+                var habitacion = estancia.Habitacion;
+                int estadoAnterior = habitacion.IdEstado;
 
                 bool permitida = await _validador.EsTransicionValidaAsync(estadoAnterior, estadoLimpieza.IdEstado);
                 if (!permitida) throw new InvalidOperationException("Transición de estado no permitida.");
@@ -240,13 +240,13 @@ namespace HotelGenericoApi.Services.Implementations
                 habitacion.FechaUltimoCambio = DateTime.UtcNow;
                 habitacion.UsuarioCambio = idUsuario;
 
-                _db.HistorialEstadoHabitacions.Add(new HistorialEstadoHabitacion
+                _db.HistorialesEstadoHabitacion.Add(new HistorialEstadoHabitacion
                 {
                     IdHabitacion = habitacion.IdHabitacion,
                     IdEstadoAnterior = estadoAnterior,
                     IdEstadoNuevo = estadoLimpieza.IdEstado,
                     FechaCambio = DateTime.UtcNow,
-                    IdUsuario = idUsuario,
+                    IdUsuario = idUsuario ?? 0,
                     Observacion = "Check‑Out automático"
                 });
             }
@@ -255,14 +255,14 @@ namespace HotelGenericoApi.Services.Implementations
 
             await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
             {
-                estancia.IdHabitacionNavigation.IdHabitacion,
-                estancia.IdHabitacionNavigation.NumeroHabitacion,
+                estancia.Habitacion.IdHabitacion,
+                estancia.Habitacion.NumeroHabitacion,
                 IdEstado = estadoLimpieza.IdEstado,
-                estancia.IdHabitacionNavigation.FechaUltimoCambio
+                estancia.Habitacion.FechaUltimoCambio
             });
 
-            await _db.Entry(estancia).Reference(e => e.IdHabitacionNavigation).LoadAsync();
-            await _db.Entry(estancia).Reference(e => e.IdClienteTitularNavigation).LoadAsync();
+            await _db.Entry(estancia).Reference(e => e.Habitacion).LoadAsync();
+            await _db.Entry(estancia).Reference(e => e.ClienteTitular).LoadAsync();
             return MapToResponse(estancia);
         }
 
@@ -274,14 +274,14 @@ namespace HotelGenericoApi.Services.Implementations
             return ultimo + 1;
         }
 
-        private static EstanciaResponseDto MapToResponse(Estancia e)
+        private static EstanciaResponseDto MapToResponse(Estancium e)
         {
             return new EstanciaResponseDto(
                 e.IdEstancia, e.IdHabitacion,
-                e.IdHabitacionNavigation?.NumeroHabitacion,
+                e.Habitacion?.NumeroHabitacion,
                 e.IdClienteTitular,
-                e.IdClienteTitularNavigation is not null
-                    ? $"{e.IdClienteTitularNavigation.Nombres} {e.IdClienteTitularNavigation.Apellidos}"
+                e.ClienteTitular is not null
+                    ? $"{e.ClienteTitular.Nombres} {e.ClienteTitular.Apellidos}"
                     : null,
                 e.FechaCheckin, e.FechaCheckoutPrevista,
                 e.FechaCheckoutReal, e.MontoTotal, e.Estado, e.CreatedAt);
@@ -290,8 +290,8 @@ namespace HotelGenericoApi.Services.Implementations
         public async Task<EstanciaResponseDto> RegistrarConsumoAsync(int idEstancia, ConsumoEstanciaCreateDto dto, int? idUsuario)
         {
             var estancia = await _db.Estancias
-                .Include(e => e.IdHabitacionNavigation)
-                .Include(e => e.IdClienteTitularNavigation)
+                .Include(e => e.Habitacion)
+                .Include(e => e.ClienteTitular)
                 .FirstOrDefaultAsync(e => e.IdEstancia == idEstancia);
 
             if (estancia is null) throw new InvalidOperationException("Estancia no encontrada.");
@@ -300,7 +300,7 @@ namespace HotelGenericoApi.Services.Implementations
             var producto = await _db.Productos.FindAsync(dto.IdProducto);
             if (producto is null) throw new InvalidOperationException("Producto no encontrado.");
 
-            var itemEstancia = new ItemsEstancium
+            var itemEstancia = new ItemEstancium
             {
                 IdEstancia = idEstancia,
                 IdProducto = dto.IdProducto,
@@ -332,12 +332,12 @@ namespace HotelGenericoApi.Services.Implementations
             try
             {
                 var habitacion = await _db.Habitaciones
-                    .Include(h => h.IdEstadoNavigation)
-                    .Include(h => h.IdTipoNavigation)
+                    .Include(h => h.Estado)
+                    .Include(h => h.TipoHabitacion)
                     .FirstOrDefaultAsync(h => h.IdHabitacion == dto.IdHabitacion);
 
                 if (habitacion is null) throw new InvalidOperationException("La habitación no existe.");
-                if (habitacion.IdEstadoNavigation == null || !habitacion.IdEstadoNavigation.PermiteCheckin)
+                if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
                     throw new InvalidOperationException("La habitación no está disponible para reserva.");
 
                 var conflicto = await _db.Reservas.AnyAsync(r =>
@@ -377,13 +377,13 @@ namespace HotelGenericoApi.Services.Implementations
                     .Where(t => t.IdTipoHabitacion == habitacion.IdTipo &&
                                 (t.FechaInicio == null || t.FechaInicio <= DateOnly.FromDateTime(dto.FechaEntradaPrevista)) &&
                                 (t.FechaFin == null || t.FechaFin >= DateOnly.FromDateTime(dto.FechaEntradaPrevista)))
-                    .OrderByDescending(t => t.IdTemporadaNavigation != null ? t.IdTemporadaNavigation.Multiplier : 1)
+                    .OrderByDescending(t => t.Temporada != null ? t.Temporada.Multiplicador : 1)
                     .FirstOrDefaultAsync();
 
                 decimal precioNoche = tarifa?.Precio ?? habitacion.PrecioNoche;
                 decimal montoSinIgv = precioNoche * noches;
 
-                var configuracion = await _db.ConfiguracionHotels.FirstOrDefaultAsync();
+                var configuracion = await _db.Configuracion.FirstOrDefaultAsync();
                 decimal tasaDefecto = configuracion?.TasaIgvHotel ?? 10.5m;
                 decimal tasaIgv = tasaDefecto;
                 decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
@@ -409,7 +409,7 @@ namespace HotelGenericoApi.Services.Implementations
                 {
                     IdHabitacion = dto.IdHabitacion,
                     IdCliente = cliente.IdCliente,
-                    IdUsuario = idUsuario,
+                    IdUsuario = idUsuario ?? 0,
                     FechaRegistro = DateTime.UtcNow,
                     FechaEntradaPrevista = dto.FechaEntradaPrevista,
                     FechaSalidaPrevista = dto.FechaSalidaPrevista,
@@ -421,10 +421,10 @@ namespace HotelGenericoApi.Services.Implementations
 
                 if (dto.FechaEntradaPrevista.Date == DateTime.UtcNow.Date)
                 {
-                    var estadoOcupada = await _db.CatEstadoHabitacions.FirstOrDefaultAsync(e => e.PermiteCheckout);
+                    var estadoOcupada = await _db.EstadosHabitacion.FirstOrDefaultAsync(e => e.PermiteCheckout);
                     if (estadoOcupada is not null)
                     {
-                        int estadoAnterior = habitacion.IdEstado ?? 0;
+int estadoAnterior = habitacion.IdEstado;
                         bool permitida = await _validador.EsTransicionValidaAsync(estadoAnterior, estadoOcupada.IdEstado);
                         if (!permitida) throw new InvalidOperationException("Transición de estado no permitida.");
 
@@ -432,13 +432,13 @@ namespace HotelGenericoApi.Services.Implementations
                         habitacion.FechaUltimoCambio = DateTime.UtcNow;
                         habitacion.UsuarioCambio = idUsuario;
 
-                        _db.HistorialEstadoHabitacions.Add(new HistorialEstadoHabitacion
+                        _db.HistorialesEstadoHabitacion.Add(new HistorialEstadoHabitacion
                         {
                             IdHabitacion = habitacion.IdHabitacion,
                             IdEstadoAnterior = estadoAnterior,
                             IdEstadoNuevo = estadoOcupada.IdEstado,
                             FechaCambio = DateTime.UtcNow,
-                            IdUsuario = idUsuario,
+                            IdUsuario = idUsuario ?? 0,
                             Observacion = "Reserva con entrada hoy — cambio automático a Ocupada"
                         });
                     }
@@ -448,7 +448,7 @@ namespace HotelGenericoApi.Services.Implementations
                 await _transactionManager.CommitAsync();
 
                 return new ReservaResponseDto(
-                    reserva.IdReserva, reserva.IdHabitacion ?? 0,
+                    reserva.IdReserva, reserva.IdHabitacion,
                     habitacion.NumeroHabitacion, $"{cliente.Nombres} {cliente.Apellidos}",
                     reserva.FechaEntradaPrevista, reserva.FechaSalidaPrevista,
                     reserva.MontoTotal, reserva.Estado ?? ESTADO_CONFIRMADA);
@@ -467,16 +467,16 @@ namespace HotelGenericoApi.Services.Implementations
         public async Task<ReservaResponseDto?> GetReservaByIdAsync(int id)
         {
             var reserva = await _db.Reservas
-                .Include(r => r.IdHabitacionNavigation)
-                .Include(r => r.IdClienteNavigation)
+                .Include(r => r.Habitacion)
+                .Include(r => r.Cliente)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(r => r.IdReserva == id);
             if (reserva is null) return null;
             return new ReservaResponseDto(
-                reserva.IdReserva, reserva.IdHabitacion ?? 0,
-                reserva.IdHabitacionNavigation?.NumeroHabitacion,
-                reserva.IdClienteNavigation != null
-                    ? $"{reserva.IdClienteNavigation.Nombres} {reserva.IdClienteNavigation.Apellidos}" : null,
+                reserva.IdReserva, reserva.IdHabitacion,
+                reserva.Habitacion?.NumeroHabitacion,
+                reserva.Cliente != null
+                    ? $"{reserva.Cliente.Nombres} {reserva.Cliente.Apellidos}" : null,
                 reserva.FechaEntradaPrevista, reserva.FechaSalidaPrevista,
                 reserva.MontoTotal, reserva.Estado ?? "Desconocido");
         }
@@ -485,14 +485,14 @@ namespace HotelGenericoApi.Services.Implementations
         {
             return await _db.Reservas
                 .Where(r => r.IdHabitacion == idHabitacion)
-                .Include(r => r.IdHabitacionNavigation)
-                .Include(r => r.IdClienteNavigation)
+                .Include(r => r.Habitacion)
+                .Include(r => r.Cliente)
                 .AsNoTracking()
                 .Select(r => new ReservaResponseDto(
-                    r.IdReserva, r.IdHabitacion ?? 0,
-                    r.IdHabitacionNavigation != null ? r.IdHabitacionNavigation.NumeroHabitacion : null,
-                    r.IdClienteNavigation != null
-                        ? $"{r.IdClienteNavigation.Nombres} {r.IdClienteNavigation.Apellidos}" : null,
+                    r.IdReserva, r.IdHabitacion,
+                    r.Habitacion != null ? r.Habitacion.NumeroHabitacion : null,
+                    r.Cliente != null
+                        ? $"{r.Cliente.Nombres} {r.Cliente.Apellidos}" : null,
                     r.FechaEntradaPrevista, r.FechaSalidaPrevista, r.MontoTotal,
                     r.Estado ?? "Pendiente"))
                 .ToListAsync();
@@ -502,11 +502,11 @@ namespace HotelGenericoApi.Services.Implementations
         {
             return await _db.ItemsEstancia
                 .Where(i => i.IdEstancia == idEstancia)
-                .Include(i => i.IdProductoNavigation)
+                .Include(i => i.Producto)
                 .OrderByDescending(i => i.FechaRegistro)
                 .Select(i => new ItemConsumoResponseDto(
                     i.IdItem, i.IdProducto,
-                    i.IdProductoNavigation != null ? i.IdProductoNavigation.Nombre : "",
+                    i.Producto != null ? i.Producto.Nombre : "",
                     i.Cantidad, i.PrecioUnitario, i.Subtotal ?? 0, i.FechaRegistro))
                 .ToListAsync();
         }

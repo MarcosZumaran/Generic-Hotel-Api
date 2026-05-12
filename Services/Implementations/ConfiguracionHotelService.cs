@@ -16,7 +16,7 @@ public class ConfiguracionHotelService : IConfiguracionHotelService
 
     public async Task<ConfiguracionHotelResponseDto> GetConfiguracionAsync()
     {
-        var config = await _db.ConfiguracionHotels.FirstOrDefaultAsync();
+        var config = await _db.Configuracion.FirstOrDefaultAsync();
 
         return config is not null
             ? new ConfiguracionHotelResponseDto(

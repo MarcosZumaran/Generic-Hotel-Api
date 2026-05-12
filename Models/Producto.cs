@@ -15,7 +15,7 @@ public partial class Producto
 
     public decimal PrecioUnitario { get; set; }
 
-    public string? IdAfectacionIgv { get; set; }
+    public string IdAfectacionIgv { get; set; } = null!;
 
     public int? IdCategoria { get; set; }
 
@@ -27,11 +27,11 @@ public partial class Producto
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual CatAfectacionIgv? IdAfectacionIgvNavigation { get; set; }
+    public virtual AfectacionIgv AfectacionIgv { get; set; } = null!;
 
-    public virtual CatCategoriaProducto? IdCategoriaNavigation { get; set; }
+    public virtual CategoriaProducto? Categoria { get; set; }
 
-    public virtual ICollection<ItemsEstancium> ItemsEstancia { get; set; } = new List<ItemsEstancium>();
+    public virtual ICollection<ItemEstancium> ItemsEstancia { get; set; } = new List<ItemEstancium>();
 
-    public virtual ICollection<ItemsVentum> ItemsVenta { get; set; } = new List<ItemsVentum>();
+    public virtual ICollection<ItemVenta> ItemsVenta { get; set; } = new List<ItemVenta>();
 }

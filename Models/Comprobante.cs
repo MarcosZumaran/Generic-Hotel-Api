@@ -11,7 +11,7 @@ public partial class Comprobante
 
     public int? IdVenta { get; set; }
 
-    public string? TipoComprobante { get; set; }
+    public string TipoComprobante { get; set; } = null!;
 
     public string Serie { get; set; } = null!;
 
@@ -31,7 +31,7 @@ public partial class Comprobante
 
     public string? MetodoPago { get; set; }
 
-    public int? IdEstadoSunat { get; set; }
+    public int IdEstadoSunat { get; set; }
 
     public string? XmlFirmado { get; set; }
 
@@ -43,11 +43,15 @@ public partial class Comprobante
 
     public string? HashXml { get; set; }
 
-    public virtual CatTipoDocumento? ClienteDocumentoTipoNavigation { get; set; }
+    public virtual TipoDocumento? ClienteDocumentoTipoRel { get; set; }
 
-    public virtual CatEstadoSunat? IdEstadoSunatNavigation { get; set; }
+    public virtual EstadoSunat EstadoSunat { get; set; } = null!;
 
-    public virtual CatMetodoPago? MetodoPagoNavigation { get; set; }
+    public virtual Estancium? Estancia { get; set; }
 
-    public virtual CatTipoComprobante? TipoComprobanteNavigation { get; set; }
+    public virtual Venta? Venta { get; set; }
+
+    public virtual MetodoPago? MetodoPagoRel { get; set; }
+
+    public virtual TipoComprobante TipoComprobanteRel { get; set; } = null!;
 }

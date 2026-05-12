@@ -7,11 +7,11 @@ public partial class Reserva
 {
     public int IdReserva { get; set; }
 
-    public int? IdCliente { get; set; }
+    public int IdCliente { get; set; }
 
-    public int? IdHabitacion { get; set; }
+    public int IdHabitacion { get; set; }
 
-    public int? IdUsuario { get; set; }
+    public int IdUsuario { get; set; }
 
     public DateTime? FechaRegistro { get; set; }
 
@@ -25,11 +25,11 @@ public partial class Reserva
 
     public string? Observaciones { get; set; }
 
-    public virtual ICollection<Estancia> Estancia { get; set; } = new List<Estancia>();
+    public virtual Cliente Cliente { get; set; } = null!;
 
-    public virtual Cliente? IdClienteNavigation { get; set; }
+    public virtual Habitacion Habitacion { get; set; } = null!;
 
-    public virtual Habitacione? IdHabitacionNavigation { get; set; }
+    public virtual Usuario Usuario { get; set; } = null!;
 
-    public virtual Usuario? IdUsuarioNavigation { get; set; }
+    public virtual ICollection<Estancium> Estancias { get; set; } = new List<Estancium>();
 }

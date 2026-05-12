@@ -10,9 +10,9 @@ namespace HotelGenericoApi.Services.Implementations;
 public class CatAfectacionIgvService : ICatAfectacionIgvService
 {
     private readonly HotelDbContext _db;
-    private readonly CatAfectacionIgvMapper _mapper;
+    private readonly AfectacionIgvMapper _mapper;
 
-    public CatAfectacionIgvService(HotelDbContext db, CatAfectacionIgvMapper mapper)
+    public CatAfectacionIgvService(HotelDbContext db, AfectacionIgvMapper mapper)
     {
         _db = db;
         _mapper = mapper;
@@ -20,27 +20,27 @@ public class CatAfectacionIgvService : ICatAfectacionIgvService
 
     public async Task<IEnumerable<CatAfectacionIgvResponseDto>> GetAllAsync()
     {
-        var entities = await _db.CatAfectacionIgvs.AsNoTracking().ToListAsync();
+        var entities = await _db.AfectacionIgvs.AsNoTracking().ToListAsync();
         return entities.Select(_mapper.ToResponse);
     }
 
     public async Task<CatAfectacionIgvResponseDto?> GetByIdAsync(string codigo)
     {
-        var entity = await _db.CatAfectacionIgvs.FindAsync(codigo);
+        var entity = await _db.AfectacionIgvs.FindAsync(codigo);
         return entity is not null ? _mapper.ToResponse(entity) : null;
     }
 
     public async Task<CatAfectacionIgvResponseDto> CreateAsync(CatAfectacionIgvCreateDto dto)
     {
         var entity = _mapper.FromCreate(dto);
-        _db.CatAfectacionIgvs.Add(entity);
+        _db.AfectacionIgvs.Add(entity);
         await _db.SaveChangesAsync();
         return _mapper.ToResponse(entity);
     }
 
     public async Task<bool> UpdateAsync(string codigo, CatAfectacionIgvUpdateDto dto)
     {
-        var entity = await _db.CatAfectacionIgvs.FindAsync(codigo);
+        var entity = await _db.AfectacionIgvs.FindAsync(codigo);
         if (entity is null) return false;
         _mapper.UpdateFromDto(dto, entity);
         await _db.SaveChangesAsync();
@@ -49,9 +49,9 @@ public class CatAfectacionIgvService : ICatAfectacionIgvService
 
     public async Task<bool> DeleteAsync(string codigo)
     {
-        var entity = await _db.CatAfectacionIgvs.FindAsync(codigo);
+        var entity = await _db.AfectacionIgvs.FindAsync(codigo);
         if (entity is null) return false;
-        _db.CatAfectacionIgvs.Remove(entity);
+        _db.AfectacionIgvs.Remove(entity);
         await _db.SaveChangesAsync();
         return true;
     }

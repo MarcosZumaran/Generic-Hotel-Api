@@ -7,7 +7,7 @@ public partial class CierreCajaEnvio
 {
     public DateOnly Fecha { get; set; }
 
-    public int? IdEstadoSunat { get; set; }
+    public int IdEstadoSunat { get; set; }
 
     public DateTime? FechaEnvio { get; set; }
 
@@ -15,5 +15,5 @@ public partial class CierreCajaEnvio
 
     public string? HashXml { get; set; }
 
-    public virtual CatEstadoSunat? IdEstadoSunatNavigation { get; set; }
+    public virtual EstadoSunat EstadoSunat { get; set; } = null!;
 }

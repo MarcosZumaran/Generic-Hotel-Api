@@ -6,9 +6,9 @@ using Riok.Mapperly.Abstractions;
 namespace HotelGenericoApi.Mappings;
 
 [Mapper]
-public partial class CatRolUsuarioMapper
+public partial class RolUsuarioMapper
 {
-    public partial CatRolUsuarioResponseDto ToResponse(CatRolUsuario entity);
-    public partial CatRolUsuario FromCreate(CatRolUsuarioCreateDto dto);
-    public partial void UpdateFromDto(CatRolUsuarioUpdateDto dto, CatRolUsuario entity);
+    public partial CatRolUsuarioResponseDto ToResponse(RolUsuario entity);
+    public partial RolUsuario FromCreate(CatRolUsuarioCreateDto dto);
+    public partial void UpdateFromDto(CatRolUsuarioUpdateDto dto, RolUsuario entity);
 }

@@ -7,27 +7,24 @@ namespace HotelGenericoApi.Mappings;
 [Mapper]
 public partial class HabitacionMapper
 {
+    [MapperIgnoreTarget(nameof(Habitacion.IdHabitacion))]
+    [MapperIgnoreTarget(nameof(Habitacion.FechaUltimoCambio))]
+    [MapperIgnoreTarget(nameof(Habitacion.UsuarioCambio))]
+    [MapperIgnoreTarget(nameof(Habitacion.Estado))]
+    [MapperIgnoreTarget(nameof(Habitacion.TipoHabitacion))]
+    [MapperIgnoreTarget(nameof(Habitacion.UsuarioCambioRel))]
+    [MapperIgnoreTarget(nameof(Habitacion.Estancias))]
+    [MapperIgnoreTarget(nameof(Habitacion.Reservas))]
+    public partial Habitacion FromCreate(HabitacionCreateDto dto);
 
-    [MapperIgnoreTarget(nameof(Habitacione.IdHabitacion))]
-    [MapperIgnoreTarget(nameof(Habitacione.FechaUltimoCambio))]
-    [MapperIgnoreTarget(nameof(Habitacione.UsuarioCambio))]
-    [MapperIgnoreTarget(nameof(Habitacione.IdEstadoNavigation))]
-    [MapperIgnoreTarget(nameof(Habitacione.IdTipoNavigation))]
-    [MapperIgnoreTarget(nameof(Habitacione.UsuarioCambioNavigation))]
-    [MapperIgnoreTarget(nameof(Habitacione.Estancia))]
-    [MapperIgnoreTarget(nameof(Habitacione.HistorialEstadoHabitacions))]
-    [MapperIgnoreTarget(nameof(Habitacione.Reservas))]
-    public partial Habitacione FromCreate(HabitacionCreateDto dto);
-
-    [MapperIgnoreTarget(nameof(Habitacione.IdHabitacion))]
-    [MapperIgnoreTarget(nameof(Habitacione.NumeroHabitacion))]
-    [MapperIgnoreTarget(nameof(Habitacione.FechaUltimoCambio))]
-    [MapperIgnoreTarget(nameof(Habitacione.UsuarioCambio))]
-    [MapperIgnoreTarget(nameof(Habitacione.IdEstadoNavigation))]
-    [MapperIgnoreTarget(nameof(Habitacione.IdTipoNavigation))]
-    [MapperIgnoreTarget(nameof(Habitacione.UsuarioCambioNavigation))]
-    [MapperIgnoreTarget(nameof(Habitacione.Estancia))]
-    [MapperIgnoreTarget(nameof(Habitacione.HistorialEstadoHabitacions))]
-    [MapperIgnoreTarget(nameof(Habitacione.Reservas))]
-    public partial void UpdateFromDto(HabitacionUpdateDto dto, Habitacione entity);
+    [MapperIgnoreTarget(nameof(Habitacion.IdHabitacion))]
+    [MapperIgnoreTarget(nameof(Habitacion.NumeroHabitacion))]
+    [MapperIgnoreTarget(nameof(Habitacion.FechaUltimoCambio))]
+    [MapperIgnoreTarget(nameof(Habitacion.UsuarioCambio))]
+    [MapperIgnoreTarget(nameof(Habitacion.Estado))]
+    [MapperIgnoreTarget(nameof(Habitacion.TipoHabitacion))]
+    [MapperIgnoreTarget(nameof(Habitacion.UsuarioCambioRel))]
+    [MapperIgnoreTarget(nameof(Habitacion.Estancias))]
+    [MapperIgnoreTarget(nameof(Habitacion.Reservas))]
+    public partial void UpdateFromDto(HabitacionUpdateDto dto, Habitacion entity);
 }

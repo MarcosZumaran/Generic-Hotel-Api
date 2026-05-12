@@ -6,9 +6,9 @@ using Riok.Mapperly.Abstractions;
 namespace HotelGenericoApi.Mappings;
 
 [Mapper]
-public partial class CatTipoComprobanteMapper
+public partial class TipoComprobanteMapper
 {
-    public partial CatTipoComprobanteResponseDto ToResponse(CatTipoComprobante entity);
-    public partial CatTipoComprobante FromCreate(CatTipoComprobanteCreateDto dto);
-    public partial void UpdateFromDto(CatTipoComprobanteUpdateDto dto, CatTipoComprobante entity);
+    public partial CatTipoComprobanteResponseDto ToResponse(TipoComprobante entity);
+    public partial TipoComprobante FromCreate(CatTipoComprobanteCreateDto dto);
+    public partial void UpdateFromDto(CatTipoComprobanteUpdateDto dto, TipoComprobante entity);
 }

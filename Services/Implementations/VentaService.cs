@@ -23,16 +23,16 @@ public class VentaService : IVentaService
     public async Task<IEnumerable<VentaResponseDto>> GetAllAsync()
     {
         return await _db.Ventas
-            .Include(v => v.IdClienteNavigation)
-            .Include(v => v.ItemsVenta).ThenInclude(i => i.IdProductoNavigation)
+            .Include(v => v.Cliente)
+            .Include(v => v.ItemsVenta).ThenInclude(i => i.Producto)
             .AsNoTracking()
             .OrderByDescending(v => v.FechaVenta)
             .Select(v => new VentaResponseDto
             {
                 IdVenta = v.IdVenta,
                 IdCliente = v.IdCliente,
-                ClienteNombre = v.IdClienteNavigation != null
-                    ? $"{v.IdClienteNavigation.Nombres} {v.IdClienteNavigation.Apellidos}"
+                ClienteNombre = v.Cliente != null
+                    ? $"{v.Cliente.Nombres} {v.Cliente.Apellidos}"
                     : "CLIENTE ANÓNIMO",
                 FechaVenta = v.FechaVenta ?? DateTime.MinValue,
                 Total = v.Total,
@@ -40,8 +40,8 @@ public class VentaService : IVentaService
                 Items = v.ItemsVenta.Select(i => new ItemVentaResponseDto
                 {
                     IdItem = i.IdItem,
-                    IdProducto = i.IdProducto ?? 0,
-                    NombreProducto = i.IdProductoNavigation != null ? i.IdProductoNavigation.Nombre : "",
+                    IdProducto = i.IdProducto,
+                    NombreProducto = i.Producto != null ? i.Producto.Nombre : "",
                     Cantidad = i.Cantidad,
                     PrecioUnitario = i.PrecioUnitario,
                     Subtotal = i.Subtotal ?? 0
@@ -53,8 +53,8 @@ public class VentaService : IVentaService
     public async Task<VentaResponseDto?> GetByIdAsync(int id)
     {
         var v = await _db.Ventas
-            .Include(v => v.IdClienteNavigation)
-            .Include(v => v.ItemsVenta).ThenInclude(i => i.IdProductoNavigation)
+            .Include(v => v.Cliente)
+            .Include(v => v.ItemsVenta).ThenInclude(i => i.Producto)
             .FirstOrDefaultAsync(x => x.IdVenta == id);
 
         if (v == null) return null;
@@ -63,8 +63,8 @@ public class VentaService : IVentaService
         {
             IdVenta = v.IdVenta,
             IdCliente = v.IdCliente,
-            ClienteNombre = v.IdClienteNavigation != null
-                ? $"{v.IdClienteNavigation.Nombres} {v.IdClienteNavigation.Apellidos}"
+            ClienteNombre = v.Cliente != null
+                ? $"{v.Cliente.Nombres} {v.Cliente.Apellidos}"
                 : "CLIENTE ANÓNIMO",
             FechaVenta = v.FechaVenta ?? DateTime.MinValue,
             Total = v.Total,
@@ -72,8 +72,8 @@ public class VentaService : IVentaService
             Items = v.ItemsVenta.Select(i => new ItemVentaResponseDto
             {
                 IdItem = i.IdItem,
-                IdProducto = i.IdProducto ?? 0,
-                NombreProducto = i.IdProductoNavigation?.Nombre ?? "",
+                IdProducto = i.IdProducto,
+                NombreProducto = i.Producto?.Nombre ?? "",
                 Cantidad = i.Cantidad,
                 PrecioUnitario = i.PrecioUnitario,
                 Subtotal = i.Subtotal ?? 0
@@ -102,10 +102,11 @@ public class VentaService : IVentaService
                 throw new InvalidOperationException("Cliente anónimo no configurado.");
         }
 
-        // 2. Calcular totales y crear ItemsVentum
+// 2. Calcular totales y crear ItemVenta
+
+        var itemsVenta = new List<ItemVenta>();
         decimal montoSinIgvTotal = 0;
         decimal igvTotal = 0;
-        var itemsVenta = new List<ItemsVentum>();
 
         foreach (var item in dto.Items)
         {
@@ -133,7 +134,7 @@ public class VentaService : IVentaService
 
             igvTotal += igvItem;
 
-            var itemVenta = new ItemsVentum
+            var itemVenta = new ItemVenta
             {
                 IdProducto = producto.IdProducto,
                 Cantidad = item.Cantidad,
@@ -149,7 +150,7 @@ public class VentaService : IVentaService
         var venta = new Venta
         {
             IdCliente = cliente?.IdCliente,
-            IdUsuario = idUsuario,
+            IdUsuario = idUsuario ?? 0,
             FechaVenta = DateTime.UtcNow,
             Total = montoTotal,
             MetodoPago = dto.MetodoPago,
@@ -192,16 +193,16 @@ public class VentaService : IVentaService
     public async Task<PagedResult<VentaResponseDto>> GetPagedAsync(int page, int pageSize)
     {
         var query = _db.Ventas
-            .Include(v => v.IdClienteNavigation)
-            .Include(v => v.ItemsVenta).ThenInclude(i => i.IdProductoNavigation)
+            .Include(v => v.Cliente)
+            .Include(v => v.ItemsVenta).ThenInclude(i => i.Producto)
             .AsNoTracking()
             .OrderByDescending(v => v.FechaVenta)
             .Select(v => new VentaResponseDto
             {
                 IdVenta = v.IdVenta,
                 IdCliente = v.IdCliente,
-                ClienteNombre = v.IdClienteNavigation != null
-                    ? $"{v.IdClienteNavigation.Nombres} {v.IdClienteNavigation.Apellidos}"
+                ClienteNombre = v.Cliente != null
+                    ? $"{v.Cliente.Nombres} {v.Cliente.Apellidos}"
                     : "CLIENTE ANÓNIMO",
                 FechaVenta = v.FechaVenta ?? DateTime.MinValue,
                 Total = v.Total,
@@ -209,8 +210,8 @@ public class VentaService : IVentaService
                 Items = v.ItemsVenta.Select(i => new ItemVentaResponseDto
                 {
                     IdItem = i.IdItem,
-                    IdProducto = i.IdProducto ?? 0,
-                    NombreProducto = i.IdProductoNavigation != null ? i.IdProductoNavigation.Nombre : "",
+                    IdProducto = i.IdProducto,
+                    NombreProducto = i.Producto != null ? i.Producto.Nombre : "",
                     Cantidad = i.Cantidad,
                     PrecioUnitario = i.PrecioUnitario,
                     Subtotal = i.Subtotal ?? 0

@@ -24,21 +24,21 @@ public class PdfService : IPdfService
 
         string? numeroHabitacion = null;
         string? fechasHospedaje = null;
-        List<Models.ItemsVentum>? itemsVenta = null;
+        List<Models.ItemVenta>? itemsVenta = null;
 
         if (comp.IdEstancia.HasValue)
         {
-            var estancia = await _db.Estancias.Include(e => e.IdHabitacionNavigation).FirstOrDefaultAsync(e => e.IdEstancia == comp.IdEstancia.Value);
+            var estancia = await _db.Estancias.Include(e => e.Habitacion).FirstOrDefaultAsync(e => e.IdEstancia == comp.IdEstancia.Value);
             if (estancia != null)
             {
-                numeroHabitacion = estancia.IdHabitacionNavigation?.NumeroHabitacion;
+                numeroHabitacion = estancia.Habitacion?.NumeroHabitacion;
                 fechasHospedaje = $"{estancia.FechaCheckin:dd/MM/yyyy} - {estancia.FechaCheckoutPrevista:dd/MM/yyyy}";
             }
         }
 
         if (comp.IdVenta.HasValue)
         {
-            var venta = await _db.Ventas.Include(v => v.ItemsVenta).ThenInclude(i => i.IdProductoNavigation).FirstOrDefaultAsync(v => v.IdVenta == comp.IdVenta.Value);
+            var venta = await _db.Ventas.Include(v => v.ItemsVenta).ThenInclude(i => i.Producto).FirstOrDefaultAsync(v => v.IdVenta == comp.IdVenta.Value);
             itemsVenta = venta?.ItemsVenta.ToList();
         }
 
@@ -60,12 +60,12 @@ public class PdfService : IPdfService
     }
 
     // --- Lógica de generación de PDF con QuestPDF ---
-    private byte[] GenerarPdfComprobante(Models.Comprobante comp, string? numeroHabitacion, string? fechasHospedaje, List<Models.ItemsVentum>? itemsVenta)
+    private byte[] GenerarPdfComprobante(Models.Comprobante comp, string? numeroHabitacion, string? fechasHospedaje, List<Models.ItemVenta>? itemsVenta)
     {
         string tipo = comp.TipoComprobante == "03" ? "BOLETA DE VENTA" : "FACTURA";
         string cliente = comp.ClienteNombre ?? "CLIENTE ANÓNIMO";
         string doc = comp.ClienteDocumentoNum ?? "—";
-        string metodo = comp.MetodoPagoNavigation?.Descripcion ?? comp.MetodoPago ?? "—";
+        string metodo = comp.MetodoPagoRel?.Descripcion ?? comp.MetodoPago ?? "—";
 
         var document = Document.Create(container =>
         {
@@ -118,7 +118,7 @@ public class PdfService : IPdfService
                         {
                             foreach (var item in itemsVenta)
                             {
-                                table.Cell().Text(item.IdProductoNavigation?.Nombre ?? "Producto");
+                                table.Cell().Text(item.Producto?.Nombre ?? "Producto");
                                 table.Cell().Text(item.Cantidad.ToString());
                                 table.Cell().Text($"{item.PrecioUnitario:F2}");
                                 table.Cell().Text($"{item.Subtotal:F2}");

@@ -15,7 +15,7 @@ public class ValidadorEstadoService : IValidadorEstadoService
 
     public async Task<bool> EsTransicionValidaAsync(int idEstadoActual, int idEstadoSiguiente)
     {
-        return await _db.CatTransicionEstados.AnyAsync(t =>
+        return await _db.TransicionesEstado.AnyAsync(t =>
             t.IdEstadoActual == idEstadoActual && t.IdEstadoSiguiente == idEstadoSiguiente);
     }
 }

@@ -24,7 +24,7 @@ public class ReporteService : IReporteService
 
     public async Task<IEnumerable<EstadoHabitacionResponseDto>> GetEstadoHabitacionesAsync()
     {
-        return await _db.VEstadoHabitaciones
+        return await _db.VEstadosHabitaciones
             .AsNoTracking()
             .Select(v => new EstadoHabitacionResponseDto(
                 v.NumeroHabitacion, v.TipoHabitacion, v.Estado,
@@ -97,7 +97,7 @@ public class ReporteService : IReporteService
 
         return await _db.ItemsEstancia
             .Where(i => i.FechaRegistro >= fechaLimite)
-            .GroupBy(i => i.IdProductoNavigation.Nombre)
+            .GroupBy(i => i.Producto.Nombre)
             .Select(g => new TopProductoDto
             {
                 Nombre = g.Key,

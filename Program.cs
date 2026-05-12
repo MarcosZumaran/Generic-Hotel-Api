@@ -18,13 +18,13 @@ builder.Services.AddDbContext<HotelDbContext>(options => options.UseSqlServer(bu
 builder.Services.AddSingleton<ILuaService, LuaService>();
 
 // Mappers
-builder.Services.AddSingleton<CatEstadoHabitacionMapper>();
-builder.Services.AddSingleton<CatRolUsuarioMapper>();
-builder.Services.AddSingleton<CatMetodoPagoMapper>();
-builder.Services.AddSingleton<CatTipoDocumentoMapper>();
-builder.Services.AddSingleton<CatTipoComprobanteMapper>();
-builder.Services.AddSingleton<CatAfectacionIgvMapper>();
-builder.Services.AddSingleton<CatEstadoSunatMapper>();
+builder.Services.AddSingleton<EstadoHabitacionMapper>();
+builder.Services.AddSingleton<RolUsuarioMapper>();
+builder.Services.AddSingleton<MetodoPagoMapper>();
+builder.Services.AddSingleton<TipoDocumentoMapper>();
+builder.Services.AddSingleton<TipoComprobanteMapper>();
+builder.Services.AddSingleton<AfectacionIgvMapper>();
+builder.Services.AddSingleton<EstadoSunatMapper>();
 builder.Services.AddSingleton<TiposHabitacionMapper>();
 builder.Services.AddSingleton<UsuarioMapper>();
 builder.Services.AddSingleton<ClienteMapper>();

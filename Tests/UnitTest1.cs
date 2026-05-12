@@ -76,7 +76,7 @@ public class EstanciaServiceTests
 
         var habitacion = await db.Habitaciones.FindAsync(1);
         Assert.NotNull(habitacion);
-        var estado = await db.CatEstadoHabitacions.FindAsync(habitacion.IdEstado);
+        var estado = await db.EstadosHabitacion.FindAsync(habitacion.IdEstado);
         Assert.True(estado?.PermiteCheckout);
     }
 

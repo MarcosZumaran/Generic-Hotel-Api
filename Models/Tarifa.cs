@@ -17,7 +17,7 @@ public partial class Tarifa
 
     public DateOnly? FechaFin { get; set; }
 
-    public virtual Temporada? IdTemporadaNavigation { get; set; }
+    public virtual TipoHabitacion TipoHabitacion { get; set; } = null!;
 
-    public virtual TiposHabitacion IdTipoHabitacionNavigation { get; set; } = null!;
+    public virtual Temporada? Temporada { get; set; }
 }

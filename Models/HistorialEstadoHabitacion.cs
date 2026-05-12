@@ -7,7 +7,7 @@ public partial class HistorialEstadoHabitacion
 {
     public int IdHistorial { get; set; }
 
-    public int? IdHabitacion { get; set; }
+    public int IdHabitacion { get; set; }
 
     public int? IdEstadoAnterior { get; set; }
 
@@ -19,7 +19,7 @@ public partial class HistorialEstadoHabitacion
 
     public string? Observacion { get; set; }
 
-    public virtual Habitacione? IdHabitacionNavigation { get; set; }
+    public virtual Habitacion Habitacion { get; set; } = null!;
 
-    public virtual Usuario? IdUsuarioNavigation { get; set; }
+    public virtual Usuario? Usuario { get; set; }
 }

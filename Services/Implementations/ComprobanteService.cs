@@ -15,7 +15,7 @@ public class ComprobanteService : IComprobanteService
     public async Task<IEnumerable<ComprobanteResponseDto>> GetAllAsync()
     {
         return await _db.Comprobantes
-            .Include(c => c.IdEstadoSunatNavigation)
+            .Include(c => c.EstadoSunat)
             .AsNoTracking()
             .Select(c => new ComprobanteResponseDto(
                 c.IdComprobante, c.IdEstancia, c.IdVenta,
@@ -24,7 +24,7 @@ public class ComprobanteService : IComprobanteService
                 c.ClienteDocumentoTipo, c.ClienteDocumentoNum,
                 c.ClienteNombre, c.MetodoPago,
                 c.IdEstadoSunat,
-                c.IdEstadoSunatNavigation != null ? c.IdEstadoSunatNavigation.Descripcion : null,
+                c.EstadoSunat != null ? c.EstadoSunat.Descripcion : null,
                 c.FechaEnvio, c.IntentosEnvio
             )).ToListAsync();
     }
@@ -32,7 +32,7 @@ public class ComprobanteService : IComprobanteService
     public async Task<ComprobanteResponseDto?> GetByIdAsync(int id)
     {
         var c = await _db.Comprobantes
-            .Include(c => c.IdEstadoSunatNavigation)
+            .Include(c => c.EstadoSunat)
             .FirstOrDefaultAsync(x => x.IdComprobante == id);
 
         if (c is null) return null;
@@ -43,7 +43,7 @@ public class ComprobanteService : IComprobanteService
             c.FechaEmision, c.MontoTotal, c.IgvMonto,
             c.ClienteDocumentoTipo, c.ClienteDocumentoNum,
             c.ClienteNombre, c.MetodoPago,
-            c.IdEstadoSunat, c.IdEstadoSunatNavigation?.Descripcion,
+            c.IdEstadoSunat, c.EstadoSunat?.Descripcion,
             c.FechaEnvio, c.IntentosEnvio
         );
     }
@@ -64,7 +64,7 @@ public class ComprobanteService : IComprobanteService
     public async Task<PagedResult<ComprobanteResponseDto>> GetPagedAsync(int page, int pageSize)
     {
         var query = _db.Comprobantes
-            .Include(c => c.IdEstadoSunatNavigation)
+            .Include(c => c.EstadoSunat)
             .AsNoTracking()
             .Select(c => new ComprobanteResponseDto(
                 c.IdComprobante, c.IdEstancia, c.IdVenta,
@@ -73,7 +73,7 @@ public class ComprobanteService : IComprobanteService
                 c.ClienteDocumentoTipo, c.ClienteDocumentoNum,
                 c.ClienteNombre, c.MetodoPago,
                 c.IdEstadoSunat,
-                c.IdEstadoSunatNavigation != null ? c.IdEstadoSunatNavigation.Descripcion : null,
+                c.EstadoSunat != null ? c.EstadoSunat.Descripcion : null,
                 c.FechaEnvio, c.IntentosEnvio
             ));
 

@@ -6,9 +6,9 @@ using Riok.Mapperly.Abstractions;
 namespace HotelGenericoApi.Mappings;
 
 [Mapper]
-public partial class CatMetodoPagoMapper
+public partial class MetodoPagoMapper
 {
-    public partial CatMetodoPagoResponseDto ToResponse(CatMetodoPago entity);
-    public partial CatMetodoPago FromCreate(CatMetodoPagoCreateDto dto);
-    public partial void UpdateFromDto(CatMetodoPagoUpdateDto dto, CatMetodoPago entity);
+    public partial CatMetodoPagoResponseDto ToResponse(MetodoPago entity);
+    public partial MetodoPago FromCreate(CatMetodoPagoCreateDto dto);
+    public partial void UpdateFromDto(CatMetodoPagoUpdateDto dto, MetodoPago entity);
 }

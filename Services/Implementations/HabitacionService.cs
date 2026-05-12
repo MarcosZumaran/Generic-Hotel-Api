@@ -28,8 +28,8 @@ namespace HotelGenericoApi.Services.Implementations
         public async Task<IEnumerable<HabitacionResponseDto>> GetAllAsync()
         {
             var entities = await _db.Habitaciones
-                .Include(h => h.IdTipoNavigation)
-                .Include(h => h.IdEstadoNavigation)
+                .Include(h => h.TipoHabitacion)
+                .Include(h => h.Estado)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -39,8 +39,8 @@ namespace HotelGenericoApi.Services.Implementations
         public async Task<HabitacionResponseDto?> GetByIdAsync(int id)
         {
             var entity = await _db.Habitaciones
-                .Include(h => h.IdTipoNavigation)
-                .Include(h => h.IdEstadoNavigation)
+                .Include(h => h.TipoHabitacion)
+                .Include(h => h.Estado)
                 .FirstOrDefaultAsync(h => h.IdHabitacion == id);
 
             return entity is not null ? MapToResponse(entity) : null;
@@ -67,8 +67,8 @@ namespace HotelGenericoApi.Services.Implementations
                 entity.FechaUltimoCambio
             });
 
-            await _db.Entry(entity).Reference(h => h.IdTipoNavigation).LoadAsync();
-            await _db.Entry(entity).Reference(h => h.IdEstadoNavigation).LoadAsync();
+            await _db.Entry(entity).Reference(h => h.TipoHabitacion).LoadAsync();
+            await _db.Entry(entity).Reference(h => h.Estado).LoadAsync();
 
             return MapToResponse(entity);
         }
@@ -105,7 +105,7 @@ namespace HotelGenericoApi.Services.Implementations
                     IdUsuario = idUsuario,
                     Observacion = "Cambio manual de estado"
                 };
-                _db.HistorialEstadoHabitacions.Add(historial);
+                _db.HistorialesEstadoHabitacion.Add(historial);
             }
 
             entity.FechaUltimoCambio = DateTime.UtcNow;
@@ -150,10 +150,10 @@ namespace HotelGenericoApi.Services.Implementations
         public async Task<IEnumerable<HabitacionEstadoActualDto>> GetEstadoActualAsync(string? rolUsuario)
         {
             var habitaciones = await _db.Habitaciones
-                .Include(h => h.IdTipoNavigation)
-                .Include(h => h.IdEstadoNavigation)
-                .Include(h => h.Estancia.Where(e => e.Estado == "Activa"))
-                    .ThenInclude(e => e.IdClienteTitularNavigation)
+                .Include(h => h.TipoHabitacion)
+                .Include(h => h.Estado)
+                .Include(h => h.Estancias.Where(e => e.Estado == "Activa"))
+                    .ThenInclude(e => e.ClienteTitular)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -161,20 +161,20 @@ namespace HotelGenericoApi.Services.Implementations
                 h.IdHabitacion,
                 h.NumeroHabitacion,
                 h.Piso,
-                h.IdTipoNavigation?.Nombre ?? "",
+                h.TipoHabitacion?.Nombre ?? "",
                 h.PrecioNoche,
-                h.IdEstado ?? 0,
-                h.IdEstadoNavigation?.Nombre ?? "",
+                h.IdEstado,
+                h.Estado?.Nombre ?? "",
                 h.Descripcion,
-                h.Estancia.FirstOrDefault()?.IdEstancia,
-                h.Estancia.FirstOrDefault()?.IdClienteTitularNavigation != null
-                    ? $"{h.Estancia.First().IdClienteTitularNavigation!.Nombres} {h.Estancia.First().IdClienteTitularNavigation!.Apellidos}"
+                h.Estancias.FirstOrDefault()?.IdEstancia,
+                h.Estancias.FirstOrDefault()?.ClienteTitular != null
+                    ? $"{h.Estancias.First().ClienteTitular!.Nombres} {h.Estancias.First().ClienteTitular!.Apellidos}"
                     : null,
-                ObtenerAccionesDisponibles(h.IdEstadoNavigation, rolUsuario)
+                ObtenerAccionesDisponibles(h.Estado, rolUsuario)
             )).ToList();
         }
 
-        private static List<string> ObtenerAccionesDisponibles(CatEstadoHabitacion? estado, string? rolUsuario)
+        private static List<string> ObtenerAccionesDisponibles(EstadoHabitacion? estado, string? rolUsuario)
         {
             var acciones = new List<string>();
 
@@ -202,7 +202,7 @@ namespace HotelGenericoApi.Services.Implementations
             return acciones;
         }
 
-        private static HabitacionResponseDto MapToResponse(Habitacione h)
+        private static HabitacionResponseDto MapToResponse(Habitacion h)
         {
             return new HabitacionResponseDto(
                 h.IdHabitacion,
@@ -210,10 +210,10 @@ namespace HotelGenericoApi.Services.Implementations
                 h.Piso,
                 h.Descripcion,
                 h.IdTipo,
-                h.IdTipoNavigation?.Nombre ?? "",
+                h.TipoHabitacion?.Nombre ?? "",
                 h.PrecioNoche,
                 h.IdEstado,
-                h.IdEstadoNavigation?.Nombre ?? "",
+                h.Estado?.Nombre ?? "",
                 h.FechaUltimoCambio,
                 h.UsuarioCambio
             );

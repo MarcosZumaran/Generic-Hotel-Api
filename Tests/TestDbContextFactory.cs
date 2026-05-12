@@ -14,24 +14,24 @@ public static class TestDbContextFactory
 
         var db = new HotelDbContext(options);
 
-        db.CatEstadoHabitacions.AddRange(
-            new CatEstadoHabitacion { IdEstado = 1, Nombre = "Disponible", PermiteCheckin = true, PermiteCheckout = false, EsEstadoFinal = false },
-            new CatEstadoHabitacion { IdEstado = 2, Nombre = "Ocupada", PermiteCheckin = false, PermiteCheckout = true, EsEstadoFinal = false },
-            new CatEstadoHabitacion { IdEstado = 3, Nombre = "Limpieza", PermiteCheckin = false, PermiteCheckout = false, EsEstadoFinal = false },
-            new CatEstadoHabitacion { IdEstado = 4, Nombre = "Mantenimiento", PermiteCheckin = false, PermiteCheckout = false, EsEstadoFinal = false }
+        db.EstadosHabitacion.AddRange(
+            new EstadoHabitacion { IdEstado = 1, Nombre = "Disponible", PermiteCheckin = true, PermiteCheckout = false, EsEstadoFinal = false },
+            new EstadoHabitacion { IdEstado = 2, Nombre = "Ocupada", PermiteCheckin = false, PermiteCheckout = true, EsEstadoFinal = false },
+            new EstadoHabitacion { IdEstado = 3, Nombre = "Limpieza", PermiteCheckin = false, PermiteCheckout = false, EsEstadoFinal = false },
+            new EstadoHabitacion { IdEstado = 4, Nombre = "Mantenimiento", PermiteCheckin = false, PermiteCheckout = false, EsEstadoFinal = false }
         );
 
-        db.CatTransicionEstados.AddRange(
-            new CatTransicionEstado { IdEstadoActual = 1, IdEstadoSiguiente = 2 },
-            new CatTransicionEstado { IdEstadoActual = 2, IdEstadoSiguiente = 3 },
-            new CatTransicionEstado { IdEstadoActual = 3, IdEstadoSiguiente = 1 },
-            new CatTransicionEstado { IdEstadoActual = 1, IdEstadoSiguiente = 4 },
-            new CatTransicionEstado { IdEstadoActual = 4, IdEstadoSiguiente = 1 }
+        db.TransicionesEstado.AddRange(
+            new TransicionEstado { IdEstadoActual = 1, IdEstadoSiguiente = 2 },
+            new TransicionEstado { IdEstadoActual = 2, IdEstadoSiguiente = 3 },
+            new TransicionEstado { IdEstadoActual = 3, IdEstadoSiguiente = 1 },
+            new TransicionEstado { IdEstadoActual = 1, IdEstadoSiguiente = 4 },
+            new TransicionEstado { IdEstadoActual = 4, IdEstadoSiguiente = 1 }
         );
 
-        db.TiposHabitacions.Add(new TiposHabitacion { IdTipo = 1, Nombre = "Matrimonial", PrecioBase = 50m });
+        db.TiposHabitacion.Add(new TipoHabitacion { IdTipo = 1, Nombre = "Matrimonial", PrecioBase = 50m });
 
-        db.Habitaciones.Add(new Habitacione
+        db.Habitaciones.Add(new Habitacion
         {
             IdHabitacion = 1,
             NumeroHabitacion = "101",
@@ -41,7 +41,7 @@ public static class TestDbContextFactory
             Piso = 1
         });
 
-        db.Habitaciones.Add(new Habitacione
+        db.Habitaciones.Add(new Habitacion
         {
             IdHabitacion = 2,
             NumeroHabitacion = "102",
@@ -69,9 +69,9 @@ public static class TestDbContextFactory
             Apellidos = "Cliente"
         });
 
-        db.ConfiguracionHotels.Add(new ConfiguracionHotel
+        db.Configuracion.Add(new Configuracion
         {
-            Id = 1,
+            IdConfiguracion = 1,
             Nombre = "Hotel Test",
             TasaIgvHotel = 10.5m
         });

@@ -8,7 +8,7 @@ namespace HotelGenericoApi.Mappings;
 [Mapper]
 public partial class TiposHabitacionMapper
 {
-    public partial TiposHabitacionResponseDto ToResponse(TiposHabitacion entity);
-    public partial TiposHabitacion FromCreate(TiposHabitacionCreateDto dto);
-    public partial void UpdateFromDto(TiposHabitacionUpdateDto dto, TiposHabitacion entity);
+    public partial TiposHabitacionResponseDto ToResponse(TipoHabitacion entity);
+    public partial TipoHabitacion FromCreate(TiposHabitacionCreateDto dto);
+    public partial void UpdateFromDto(TiposHabitacionUpdateDto dto, TipoHabitacion entity);
 }

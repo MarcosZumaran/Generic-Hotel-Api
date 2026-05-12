@@ -22,7 +22,7 @@ public class ProductoService : IProductoService
     public async Task<IEnumerable<ProductoResponseDto>> GetAllAsync()
     {
         var entities = await _db.Productos
-            .Include(p => p.IdAfectacionIgvNavigation)
+            .Include(p => p.AfectacionIgv)
             .AsNoTracking()
             .ToListAsync();
 
@@ -32,7 +32,7 @@ public class ProductoService : IProductoService
     public async Task<ProductoResponseDto?> GetByIdAsync(int id)
     {
         var entity = await _db.Productos
-            .Include(p => p.IdAfectacionIgvNavigation)
+            .Include(p => p.AfectacionIgv)
             .FirstOrDefaultAsync(p => p.IdProducto == id);
 
         return entity is not null ? MapToResponse(entity) : null;
@@ -45,7 +45,7 @@ public class ProductoService : IProductoService
         _db.Productos.Add(entity);
         await _db.SaveChangesAsync();
 
-        await _db.Entry(entity).Reference(p => p.IdAfectacionIgvNavigation).LoadAsync();
+        await _db.Entry(entity).Reference(p => p.AfectacionIgv).LoadAsync();
         return MapToResponse(entity);
     }
 
@@ -76,7 +76,7 @@ public class ProductoService : IProductoService
             p.Descripcion,
             p.PrecioUnitario,
             p.IdAfectacionIgv,
-            p.IdAfectacionIgvNavigation?.Descripcion,
+            p.AfectacionIgv?.Descripcion,
             p.Stock,
             p.StockMinimo,
             p.UnidadMedida,

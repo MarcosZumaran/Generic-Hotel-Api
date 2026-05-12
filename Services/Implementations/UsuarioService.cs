@@ -29,15 +29,15 @@ public class UsuarioService : IUsuarioService
     public async Task<IEnumerable<UsuarioResponseDto>> GetAllAsync()
     {
         var usuarios = await _db.Usuarios
-            .Include(u => u.IdRolNavigation)   // EF crea esta navegación
+            .Include(u => u.Rol)   // EF crea esta navegación
             .AsNoTracking()
             .ToListAsync();
 
         return usuarios.Select(u => new UsuarioResponseDto(
             u.IdUsuario,
             u.Username,
-            u.IdRol ?? 0,
-            u.IdRolNavigation?.Nombre ?? "",
+            u.IdRol,
+            u.Rol?.Nombre ?? "",
             u.EstaActivo ?? false,
             u.FechaCreacion ?? DateTime.MinValue
         ));
@@ -46,7 +46,7 @@ public class UsuarioService : IUsuarioService
     public async Task<UsuarioResponseDto?> GetByIdAsync(int id)
     {
         var usuario = await _db.Usuarios
-            .Include(u => u.IdRolNavigation)
+            .Include(u => u.Rol)
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.IdUsuario == id);
 
@@ -55,8 +55,8 @@ public class UsuarioService : IUsuarioService
         return new UsuarioResponseDto(
             usuario.IdUsuario,
             usuario.Username,
-            usuario.IdRol ?? 0,
-            usuario.IdRolNavigation?.Nombre ?? "",
+            usuario.IdRol,
+            usuario.Rol?.Nombre ?? "",
             usuario.EstaActivo ?? false,
             usuario.FechaCreacion ?? DateTime.MinValue
         );
@@ -73,13 +73,13 @@ public class UsuarioService : IUsuarioService
         await _db.SaveChangesAsync();
 
         // Recargar con navegación para obtener el nombre del rol
-        await _db.Entry(entity).Reference(u => u.IdRolNavigation).LoadAsync();
+        await _db.Entry(entity).Reference(u => u.Rol).LoadAsync();
 
         return new UsuarioResponseDto(
             entity.IdUsuario,
             entity.Username,
-            entity.IdRol ?? 0,
-            entity.IdRolNavigation?.Nombre ?? "",
+            entity.IdRol,
+            entity.Rol?.Nombre ?? "",
             entity.EstaActivo ?? false,
             entity.FechaCreacion ?? DateTime.MinValue
         );
@@ -114,7 +114,7 @@ public class UsuarioService : IUsuarioService
     public async Task<LoginResponseDto?> LoginAsync(LoginDto dto)
     {
         var usuario = await _db.Usuarios
-            .Include(u => u.IdRolNavigation)
+            .Include(u => u.Rol)
             .FirstOrDefaultAsync(u => u.Username == dto.Username && u.EstaActivo == true);
 
         if (usuario is null || !BCrypt.Net.BCrypt.Verify(dto.Password, usuario.PasswordHash))
@@ -124,8 +124,8 @@ public class UsuarioService : IUsuarioService
         var usuarioDto = new UsuarioResponseDto(
             usuario.IdUsuario,
             usuario.Username,
-            usuario.IdRol ?? 0,
-            usuario.IdRolNavigation?.Nombre ?? "",
+            usuario.IdRol,
+            usuario.Rol?.Nombre ?? "",
             usuario.EstaActivo ?? false,
             usuario.FechaCreacion ?? DateTime.MinValue
         );
@@ -143,7 +143,7 @@ public class UsuarioService : IUsuarioService
         {
             new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
             new Claim(ClaimTypes.Name, usuario.Username),
-            new Claim(ClaimTypes.Role, usuario.IdRolNavigation?.Nombre ?? "")
+            new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "")
         };
 
         var token = new JwtSecurityToken(

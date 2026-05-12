@@ -24,7 +24,7 @@ public class SetupService
         if (!await EsPrimerInicioAsync())
             throw new InvalidOperationException("El sistema ya fue inicializado.");
 
-        var rolAdmin = await _db.CatRolUsuarios.FirstOrDefaultAsync(r => r.Nombre == "Administrador")
+        var rolAdmin = await _db.RolesUsuario.FirstOrDefaultAsync(r => r.Nombre == "Administrador")
             ?? throw new InvalidOperationException("Rol Administrador no encontrado en el catálogo.");
 
         var usuario = new Usuario

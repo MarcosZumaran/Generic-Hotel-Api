@@ -13,7 +13,7 @@ public partial class Temporada
 
     public DateOnly FechaFin { get; set; }
 
-    public decimal Multiplier { get; set; }
+    public decimal Multiplicador { get; set; }
 
     public virtual ICollection<Tarifa> Tarifas { get; set; } = new List<Tarifa>();
 }
