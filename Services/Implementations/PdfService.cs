@@ -44,7 +44,7 @@ public class PdfService : IPdfService
             itemsVenta = venta?.ItemsVenta.ToList();
         }
 
-        return GenerarPdfComprobante(comp, numeroHabitacion, fechasHospedaje, itemsVenta);
+        return await GenerarPdfComprobanteAsync(comp, numeroHabitacion, fechasHospedaje, itemsVenta);
     }
 
     public async Task<byte[]> GenerarPdfVentaAsync(int idVenta)
@@ -62,13 +62,24 @@ public class PdfService : IPdfService
     }
 
     // --- Lógica de generación de PDF con QuestPDF ---
-    private byte[] GenerarPdfComprobante(Models.Comprobante comp, string? numeroHabitacion, string? fechasHospedaje, List<Models.ItemVenta>? itemsVenta)
+    private async Task<byte[]> GenerarPdfComprobanteAsync(Models.Comprobante comp, string? numeroHabitacion, string? fechasHospedaje, List<Models.ItemVenta>? itemsVenta)
     {
         string tipo = comp.TipoComprobante == "03" ? "BOLETA DE VENTA" : "FACTURA";
         string cliente = comp.ClienteNombre ?? "CLIENTE ANÓNIMO";
         string doc = comp.ClienteDocumentoNum ?? "—";
-        string metodo = comp.MetodoPagoRel?.Descripcion ?? comp.MetodoPago ?? "—";
 
+        // Obtener descripción del método de pago si existe el código
+        string? metodoDesc = null;
+        if (!string.IsNullOrEmpty(comp.MetodoPago))
+        {
+            metodoDesc = await _db.MetodosPago
+                .Where(m => m.Codigo == comp.MetodoPago)
+                .Select(m => m.Descripcion)
+                .FirstOrDefaultAsync();
+        }
+        string metodo = metodoDesc ?? comp.MetodoPago ?? "—";
+
+        // Generar el PDF con QuestPDF
         var document = Document.Create(container =>
         {
             container.Page(page =>
@@ -140,9 +151,10 @@ public class PdfService : IPdfService
 
         return document.GeneratePdf();
     }
-    
+
     public async Task<byte[]> GenerarPdfCierreCajaAsync(DateOnly fecha)
     {
+        // Este método no necesita cambios, se incluye para que todo compile
         var datos = await _db.VCierreCajaDiarios
             .Where(v => v.Fecha == fecha)
             .ToListAsync();
@@ -169,9 +181,9 @@ public class PdfService : IPdfService
                     {
                         table.ColumnsDefinition(columns =>
                         {
-                            columns.RelativeColumn(2); // Concepto
-                            columns.RelativeColumn(2); // Método de Pago
-                            columns.RelativeColumn(1); // Ingresos
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(1);
                         });
 
                         table.Header(header =>

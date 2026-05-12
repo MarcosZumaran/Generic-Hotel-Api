@@ -22,7 +22,6 @@ public class ComprobanteService : IComprobanteService
     public async Task<IEnumerable<ComprobanteResponseDto>> GetAllAsync()
     {
         return await _db.Comprobantes
-            .Include(c => c.EstadoSunat)
             .AsNoTracking()
             .Select(c => new ComprobanteResponseDto(
                 c.IdComprobante, c.IdEstancia, c.IdVenta,
@@ -31,18 +30,20 @@ public class ComprobanteService : IComprobanteService
                 c.ClienteDocumentoTipo, c.ClienteDocumentoNum,
                 c.ClienteNombre, c.MetodoPago,
                 c.IdEstadoSunat,
-                c.EstadoSunat != null ? c.EstadoSunat.Descripcion : null,
+                _db.EstadosSunat.Where(es => es.Codigo == c.IdEstadoSunat).Select(es => es.Descripcion).FirstOrDefault(),
                 c.FechaEnvio, c.IntentosEnvio
             )).ToListAsync();
     }
 
     public async Task<ComprobanteResponseDto?> GetByIdAsync(int id)
     {
-        var c = await _db.Comprobantes
-            .Include(c => c.EstadoSunat)
-            .FirstOrDefaultAsync(x => x.IdComprobante == id);
-
+        var c = await _db.Comprobantes.FirstOrDefaultAsync(x => x.IdComprobante == id);
         if (c is null) return null;
+
+        var descripcion = await _db.EstadosSunat
+            .Where(es => es.Codigo == c.IdEstadoSunat)
+            .Select(es => es.Descripcion)
+            .FirstOrDefaultAsync();
 
         return new ComprobanteResponseDto(
             c.IdComprobante, c.IdEstancia, c.IdVenta,
@@ -50,7 +51,7 @@ public class ComprobanteService : IComprobanteService
             c.FechaEmision, c.MontoTotal, c.IgvMonto,
             c.ClienteDocumentoTipo, c.ClienteDocumentoNum,
             c.ClienteNombre, c.MetodoPago,
-            c.IdEstadoSunat, c.EstadoSunat?.Descripcion,
+            c.IdEstadoSunat, descripcion,
             c.FechaEnvio, c.IntentosEnvio
         );
     }
@@ -80,7 +81,6 @@ public class ComprobanteService : IComprobanteService
     public async Task<PagedResult<ComprobanteResponseDto>> GetPagedAsync(int page, int pageSize)
     {
         var query = _db.Comprobantes
-            .Include(c => c.EstadoSunat)
             .AsNoTracking()
             .Select(c => new ComprobanteResponseDto(
                 c.IdComprobante, c.IdEstancia, c.IdVenta,
@@ -89,11 +89,10 @@ public class ComprobanteService : IComprobanteService
                 c.ClienteDocumentoTipo, c.ClienteDocumentoNum,
                 c.ClienteNombre, c.MetodoPago,
                 c.IdEstadoSunat,
-                c.EstadoSunat != null ? c.EstadoSunat.Descripcion : null,
+                _db.EstadosSunat.Where(es => es.Codigo == c.IdEstadoSunat).Select(es => es.Descripcion).FirstOrDefault(),
                 c.FechaEnvio, c.IntentosEnvio
             ));
 
-        var paged = await query.ToPagedResultAsync(page, pageSize);
-        return paged;
+        return await query.ToPagedResultAsync(page, pageSize);
     }
 }

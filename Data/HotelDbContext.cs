@@ -103,22 +103,35 @@ public partial class HotelDbContext : DbContext
         {
             entity.ToTable("comprobante");
             entity.HasKey(e => e.IdComprobante);
+            entity.Property(e => e.IdComprobante).HasColumnName("id_comprobante").ValueGeneratedOnAdd();
             entity.HasIndex(e => new { e.Serie, e.Correlativo }).IsUnique();
-            entity.Property(e => e.TipoComprobante).HasMaxLength(2).IsFixedLength();
-            entity.Property(e => e.Serie).HasMaxLength(4);
-            entity.Property(e => e.ClienteDocumentoTipo).HasMaxLength(1).IsFixedLength();
-            entity.Property(e => e.ClienteDocumentoNum).HasMaxLength(20);
-            entity.Property(e => e.ClienteNombre).HasMaxLength(200);
-            entity.Property(e => e.MetodoPago).HasMaxLength(3).IsFixedLength();
-            entity.Property(e => e.HashXml).HasMaxLength(64);
-            entity.Property(e => e.MontoTotal).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.IgvMonto).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.FechaEmision).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.IdEstadoSunat).HasDefaultValue(1);
-            entity.Property(e => e.IntentosEnvio).HasDefaultValue(0);
-            entity.HasOne(e => e.TipoComprobanteRel).WithMany(t => t.Comprobantes).HasForeignKey(e => e.TipoComprobante).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.EstadoSunat).WithMany(es => es.Comprobantes).HasForeignKey(e => e.IdEstadoSunat).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.MetodoPagoRel).WithMany(m => m.Comprobantes).HasForeignKey(e => e.MetodoPago).OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.Property(e => e.TipoComprobante).HasColumnName("tipo_comprobante").HasMaxLength(2).IsFixedLength().IsRequired();
+            entity.Property(e => e.Serie).HasColumnName("serie").HasMaxLength(4).IsRequired();
+            entity.Property(e => e.Correlativo).HasColumnName("correlativo").IsRequired();
+            entity.Property(e => e.FechaEmision).HasColumnName("fecha_emision").HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.MontoTotal).HasColumnName("monto_total").HasColumnType("decimal(10,2)").IsRequired();
+            entity.Property(e => e.IgvMonto).HasColumnName("igv_monto").HasColumnType("decimal(10,2)").IsRequired();
+            entity.Property(e => e.ClienteDocumentoTipo).HasColumnName("cliente_documento_tipo").HasMaxLength(1).IsFixedLength(false);
+            entity.Property(e => e.ClienteDocumentoNum).HasColumnName("cliente_documento_num").HasMaxLength(20);
+            entity.Property(e => e.ClienteNombre).HasColumnName("cliente_nombre").HasMaxLength(200);
+            entity.Property(e => e.MetodoPago).HasColumnName("metodo_pago").HasMaxLength(3).IsFixedLength(false);
+            entity.Property(e => e.IdEstadoSunat).HasColumnName("id_estado_sunat").HasDefaultValue(1).IsRequired();
+            entity.Property(e => e.XmlFirmado).HasColumnName("xml_firmado");
+            entity.Property(e => e.CdrZip).HasColumnName("cdr_zip");
+            entity.Property(e => e.FechaEnvio).HasColumnName("fecha_envio");
+            entity.Property(e => e.IntentosEnvio).HasColumnName("intentos_envio").HasDefaultValue(0);
+            entity.Property(e => e.HashXml).HasColumnName("hash_xml").HasMaxLength(64);
+
+            entity.Property(e => e.IdEstancia).HasColumnName("id_estancia");
+            entity.Property(e => e.IdVenta).HasColumnName("id_venta");
+
+            entity.HasOne<EstadoSunat>().WithMany().HasForeignKey(e => e.IdEstadoSunat).HasPrincipalKey(e => e.Codigo).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<Estancium>().WithMany().HasForeignKey(e => e.IdEstancia).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<Venta>().WithMany().HasForeignKey(e => e.IdVenta).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<MetodoPago>().WithMany().HasForeignKey(e => e.MetodoPago).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<TipoComprobante>().WithMany().HasForeignKey(e => e.TipoComprobante).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<TipoDocumento>().WithMany().HasForeignKey(e => e.ClienteDocumentoTipo).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Configuracion>(entity =>

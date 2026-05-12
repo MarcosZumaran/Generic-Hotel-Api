@@ -13,5 +13,4 @@ public partial class EstadoSunat
 
     public virtual ICollection<CierreCajaEnvio> CierreCajaEnvios { get; set; } = new List<CierreCajaEnvio>();
 
-    public virtual ICollection<Comprobante> Comprobantes { get; set; } = new List<Comprobante>();
 }

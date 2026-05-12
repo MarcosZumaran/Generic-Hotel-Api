@@ -22,7 +22,7 @@ namespace HotelGenericoApi.Services.Implementations
         private const string ESTADO_ACTIVA = "Activa";
         private const string ESTADO_FINALIZADA = "Finalizada";
         private const string ESTADO_CONFIRMADA = "Confirmada";
-        private const string ESTADO_CHECKIN_REALIZADO = "Check‑in realizado";
+        private const string ESTADO_CHECKIN_REALIZADO = "Check-in realizado";
 
         public EstanciaService(
             HotelDbContext db,
@@ -73,7 +73,7 @@ namespace HotelGenericoApi.Services.Implementations
 
             if (habitacion is null) throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no existe.");
             if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
-                throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para check‑in.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para check-in.");
 
             // Validar reserva si se proporciona
             if (dto.IdReserva.HasValue)
@@ -82,7 +82,7 @@ namespace HotelGenericoApi.Services.Implementations
                 if (reserva is null) throw new BusinessRuleViolationException(BusinessErrorCode.ReservationNotFound, "La reserva no existe.");
                 if (reserva.Estado != "Confirmada") throw new BusinessRuleViolationException(BusinessErrorCode.ReservationNotFound, "La reserva no está confirmada.");
                 if (reserva.IdHabitacion != dto.IdHabitacion) throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict, "La habitación no coincide con la reserva.");
-                reserva.Estado = "Check‑in realizado";
+                reserva.Estado = "Check-in realizado";
             }
 
             Cliente cliente;
@@ -258,7 +258,7 @@ namespace HotelGenericoApi.Services.Implementations
                     IdEstadoNuevo = estadoLimpieza.IdEstado,
                     FechaCambio = DateTime.UtcNow,
                     IdUsuario = idUsuario ?? 0,
-                    Observacion = "Check‑Out automático"
+                    Observacion = "Check-Out automático"
                 });
             }
 

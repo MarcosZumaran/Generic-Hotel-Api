@@ -9,5 +9,4 @@ public partial class TipoComprobante
 
     public string Descripcion { get; set; } = null!;
 
-    public virtual ICollection<Comprobante> Comprobantes { get; set; } = new List<Comprobante>();
 }

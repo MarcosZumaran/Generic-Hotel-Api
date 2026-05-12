@@ -31,7 +31,6 @@ public partial class Estancium
 
     public virtual Reserva? Reserva { get; set; }
 
-    public virtual ICollection<Comprobante> Comprobantes { get; set; } = new List<Comprobante>();
 
     public virtual ICollection<Huesped> Huespedes { get; set; } = new List<Huesped>();
 

@@ -17,7 +17,6 @@ public partial class Venta
 
     public string MetodoPago { get; set; } = null!;
 
-    public virtual ICollection<Comprobante> Comprobantes { get; set; } = new List<Comprobante>();
 
     public virtual Cliente? Cliente { get; set; }
 
