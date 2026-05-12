@@ -5,6 +5,7 @@
 --    Script único para la creación completa de la base de datos
 --    del sistema hotelero genérico. Nomenclatura unificada,
 --    restricciones explícitas, índices estratégicos.
+--    Incluye estado "En Reserva" y columna es_no_show.
 -- ================================================================
 
 USE [master];
@@ -204,6 +205,7 @@ CREATE TABLE reserva (
     monto_total DECIMAL(10,2) NOT NULL,
     estado NVARCHAR(20) DEFAULT 'Pendiente',
     observaciones NVARCHAR(300),
+    es_no_show BIT NOT NULL DEFAULT 0,
     CONSTRAINT fk_reserva_cliente FOREIGN KEY (id_cliente) REFERENCES cliente(id_cliente),
     CONSTRAINT fk_reserva_habitacion FOREIGN KEY (id_habitacion) REFERENCES habitacion(id_habitacion),
     CONSTRAINT fk_reserva_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
@@ -371,7 +373,8 @@ INSERT INTO estado_habitacion (nombre, descripcion, permite_checkin, permite_che
 ('Disponible','Lista para ser ocupada',1,0,0,'success'),
 ('Ocupada','Con huéspedes actualmente',0,1,0,'warning'),
 ('Limpieza','En proceso de limpieza',0,0,0,'info'),
-('Mantenimiento','Fuera de servicio',0,0,0,'error');
+('Mantenimiento','Fuera de servicio',0,0,0,'error'),
+('En Reserva','Habitación reservada para hoy, esperando check-in',1,0,0,'warning');
 
 INSERT INTO rol_usuario (nombre) VALUES
 ('Administrador'), ('Recepcionista'), ('Limpieza');
@@ -398,7 +401,8 @@ INSERT INTO cliente (tipo_documento, documento, nombres, apellidos, nacionalidad
 VALUES ('0','00000000','CLIENTE','ANONIMO','PERUANA');
 
 INSERT INTO transicion_estado (id_estado_actual, id_estado_siguiente) VALUES
-(1,2),(2,3),(3,1),(1,4),(4,1);
+(1,2),(2,3),(3,1),(1,4),(4,1),        -- originales
+(1,5),(5,2),(5,1);                     -- nuevas: En Reserva
 GO
 
 -- =============================================

@@ -60,12 +60,16 @@ namespace HotelGenericoApi.Services.Implementations
             _db.Habitaciones.Add(entity);
             await _db.SaveChangesAsync();
 
+            var nuevoEstado = await _db.EstadosHabitacion.FindAsync(entity.IdEstado);
+            string nuevoEstadoNombre = nuevoEstado?.Nombre ?? "";
+
             await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
             {
-                entity.IdHabitacion,
-                entity.NumeroHabitacion,
-                entity.IdEstado,
-                entity.FechaUltimoCambio
+                idHabitacion = entity.IdHabitacion,
+                numero = entity.NumeroHabitacion,
+                nuevoEstado = nuevoEstadoNombre,
+                idEstado = entity.IdEstado,
+                fechaUltimoCambio = entity.FechaUltimoCambio
             });
 
             await _db.Entry(entity).Reference(h => h.TipoHabitacion).LoadAsync();
@@ -114,12 +118,16 @@ namespace HotelGenericoApi.Services.Implementations
 
             await _db.SaveChangesAsync();
 
+            var nuevoEstado = await _db.EstadosHabitacion.FindAsync(entity.IdEstado);
+            string nuevoEstadoNombre = nuevoEstado?.Nombre ?? "";
+
             await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
             {
-                IdHabitacion = id,
-                entity.NumeroHabitacion,
-                IdEstado = entity.IdEstado,
-                entity.FechaUltimoCambio
+                idHabitacion = entity.IdHabitacion,
+                numero = entity.NumeroHabitacion,
+                nuevoEstado = nuevoEstadoNombre,
+                idEstado = entity.IdEstado,
+                fechaUltimoCambio = entity.FechaUltimoCambio
             });
 
             return true;
@@ -137,12 +145,16 @@ namespace HotelGenericoApi.Services.Implementations
             _db.Habitaciones.Remove(entity);
             await _db.SaveChangesAsync();
 
+            var nuevoEstado = await _db.EstadosHabitacion.FindAsync(entity.IdEstado);
+            string nuevoEstadoNombre = nuevoEstado?.Nombre ?? "";
+
             await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
             {
-                IdHabitacion = id,
-                NumeroHabitacion = "",
-                IdEstado = -1, // Esto indica que la habitación fue eliminada
-                FechaUltimoCambio = DateTime.UtcNow
+                idHabitacion = entity.IdHabitacion,
+                numero = entity.NumeroHabitacion,
+                nuevoEstado = nuevoEstadoNombre,
+                idEstado = entity.IdEstado,
+                fechaUltimoCambio = entity.FechaUltimoCambio
             });
 
             return true;
@@ -187,7 +199,6 @@ namespace HotelGenericoApi.Services.Implementations
             if (estado.PermiteCheckout && (rolUsuario == "Administrador" || rolUsuario == "Recepcionista"))
             {
                 acciones.Add("CheckOut");
-                acciones.Add("PasarLimpieza");
             }
 
             if (rolUsuario == "Administrador")

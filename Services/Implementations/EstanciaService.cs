@@ -5,9 +5,9 @@ using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Models.Exceptions;
 using HotelGenericoApi.Services.Interfaces;
-using NLua;
 using HotelGenericoApi.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using NLua;
 
 namespace HotelGenericoApi.Services.Implementations
 {
@@ -17,21 +17,19 @@ namespace HotelGenericoApi.Services.Implementations
         private readonly ILuaService _lua;
         private readonly IDbTransactionManager _transactionManager;
         private readonly IValidadorEstadoService _validador;
-        private readonly Microsoft.AspNetCore.SignalR.IHubContext<HabitacionHub> _hubContext;
+        private readonly IHubContext<HabitacionHub> _hubContext;
 
         private const string ESTADO_ACTIVA = "Activa";
         private const string ESTADO_FINALIZADA = "Finalizada";
         private const string ESTADO_CONFIRMADA = "Confirmada";
         private const string ESTADO_CHECKIN_REALIZADO = "Check‑in realizado";
 
-        // Constructor principal con todas las dependencias
         public EstanciaService(
             HotelDbContext db,
             ILuaService lua,
             IDbTransactionManager transactionManager,
             IValidadorEstadoService validador,
-            Microsoft.AspNetCore.SignalR.IHubContext<HabitacionHub> hubContext
-        )
+            IHubContext<HabitacionHub> hubContext)
         {
             _db = db;
             _lua = lua;
@@ -40,8 +38,9 @@ namespace HotelGenericoApi.Services.Implementations
             _hubContext = hubContext;
         }
 
-        // Constructor simplificado que usa las implementaciones reales
-        public EstanciaService(HotelDbContext db, ILuaService lua) : this(db, lua, new SqlServerTransactionManager(db), new ValidadorEstadoService(db), null!)
+        // Constructor simplificado (si aún lo usas, mantenlo)
+        public EstanciaService(HotelDbContext db, ILuaService lua)
+            : this(db, lua, new SqlServerTransactionManager(db), new ValidadorEstadoService(db), null!)
         {
         }
 
@@ -127,8 +126,7 @@ namespace HotelGenericoApi.Services.Implementations
             decimal montoSinIgv = precioNoche * noches;
 
             var configuracion = await _db.Configuracion.FirstOrDefaultAsync();
-            decimal tasaDefecto = configuracion?.TasaIgvHotel ?? 10.5m;
-            decimal tasaIgv = tasaDefecto;
+            decimal tasaIgv = configuracion?.TasaIgvHotel ?? 18m; // default 18%
             decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
 
             try
@@ -185,12 +183,14 @@ namespace HotelGenericoApi.Services.Implementations
 
             await _db.SaveChangesAsync();
 
+            // Notificar cambio de estado con nombre
             await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
             {
-                habitacion.IdHabitacion,
-                habitacion.NumeroHabitacion,
-                IdEstado = estadoOcupada.IdEstado,
-                habitacion.FechaUltimoCambio
+                idHabitacion = habitacion.IdHabitacion,
+                numero = habitacion.NumeroHabitacion,
+                nuevoEstado = estadoOcupada?.Nombre ?? "Ocupada",
+                idEstado = estadoOcupada?.IdEstado ?? 2,
+                fechaUltimoCambio = DateTime.UtcNow
             });
 
             var comprobante = new Comprobante
@@ -264,10 +264,11 @@ namespace HotelGenericoApi.Services.Implementations
 
             await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
             {
-                estancia.Habitacion.IdHabitacion,
-                estancia.Habitacion.NumeroHabitacion,
-                IdEstado = estadoLimpieza.IdEstado,
-                estancia.Habitacion.FechaUltimoCambio
+                idHabitacion = estancia.Habitacion?.IdHabitacion ?? 0,
+                numero = estancia.Habitacion?.NumeroHabitacion ?? "",
+                nuevoEstado = estadoLimpieza?.Nombre ?? "Limpieza",
+                idEstado = estadoLimpieza?.IdEstado ?? 3,
+                fechaUltimoCambio = DateTime.UtcNow
             });
 
             await _db.Entry(estancia).Reference(e => e.Habitacion).LoadAsync();
@@ -349,11 +350,7 @@ namespace HotelGenericoApi.Services.Implementations
                 if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
                     throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para reserva.");
 
-                var conflicto = await _db.Reservas.AnyAsync(r =>
-                    r.IdHabitacion == dto.IdHabitacion && r.Estado != "Cancelada" &&
-                    r.FechaEntradaPrevista < dto.FechaSalidaPrevista && r.FechaSalidaPrevista > dto.FechaEntradaPrevista);
-                if (conflicto) throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict, "La habitación ya está reservada en ese rango de fechas.");
-
+                // Cliente
                 Cliente cliente;
                 if (dto.UsarClienteAnonimo)
                 {
@@ -393,8 +390,7 @@ namespace HotelGenericoApi.Services.Implementations
                 decimal montoSinIgv = precioNoche * noches;
 
                 var configuracion = await _db.Configuracion.FirstOrDefaultAsync();
-                decimal tasaDefecto = configuracion?.TasaIgvHotel ?? 10.5m;
-                decimal tasaIgv = tasaDefecto;
+                decimal tasaIgv = configuracion?.TasaIgvHotel ?? 18m;
                 decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
 
                 try
@@ -424,32 +420,53 @@ namespace HotelGenericoApi.Services.Implementations
                     FechaSalidaPrevista = dto.FechaSalidaPrevista,
                     MontoTotal = montoTotal,
                     Estado = ESTADO_CONFIRMADA,
-                    Observaciones = $"Reserva creada para {noches} noche(s)."
+                    Observaciones = $"Reserva creada para {noches} noche(s).",
+                    EsNoShow = false
                 };
                 _db.Reservas.Add(reserva);
+                await _db.SaveChangesAsync(); // Guardamos para obtener el ID
 
+                // Validación de conflicto excluyendo la propia reserva
+                var conflicto = await _db.Reservas.AnyAsync(r =>
+                    r.IdHabitacion == dto.IdHabitacion && r.Estado != "Cancelada" &&
+                    r.FechaEntradaPrevista < dto.FechaSalidaPrevista && r.FechaSalidaPrevista > dto.FechaEntradaPrevista
+                    && r.IdReserva != reserva.IdReserva); // ¡Excluir la recién creada!
+
+                if (conflicto)
+                    throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict,
+                        "La habitación ya está reservada en ese rango de fechas.");
+
+                // Si la entrada es hoy, cambiar estado a "En Reserva"
                 if (dto.FechaEntradaPrevista.Date == DateTime.UtcNow.Date)
                 {
-                    var estadoOcupada = await _db.EstadosHabitacion.FirstOrDefaultAsync(e => e.PermiteCheckout);
-                    if (estadoOcupada is not null)
+                    var estadoEnReserva = await _db.EstadosHabitacion.FirstOrDefaultAsync(e => e.Nombre == "En Reserva");
+                    if (estadoEnReserva != null)
                     {
-int estadoAnterior = habitacion.IdEstado;
-                        bool permitida = await _validador.EsTransicionValidaAsync(estadoAnterior, estadoOcupada.IdEstado);
-                        if (!permitida) throw new BusinessRuleViolationException(BusinessErrorCode.InvalidTransition, "Transición de estado no permitida.");
-
-                        habitacion.IdEstado = estadoOcupada.IdEstado;
-                        habitacion.FechaUltimoCambio = DateTime.UtcNow;
-                        habitacion.UsuarioCambio = idUsuario;
-
-                        _db.HistorialesEstadoHabitacion.Add(new HistorialEstadoHabitacion
+                        bool permitida = await _validador.EsTransicionValidaAsync(habitacion.IdEstado, estadoEnReserva.IdEstado);
+                        if (permitida)
                         {
-                            IdHabitacion = habitacion.IdHabitacion,
-                            IdEstadoAnterior = estadoAnterior,
-                            IdEstadoNuevo = estadoOcupada.IdEstado,
-                            FechaCambio = DateTime.UtcNow,
-                            IdUsuario = idUsuario ?? 0,
-                            Observacion = "Reserva con entrada hoy — cambio automático a Ocupada"
-                        });
+                            _db.HistorialesEstadoHabitacion.Add(new HistorialEstadoHabitacion
+                            {
+                                IdHabitacion = habitacion.IdHabitacion,
+                                IdEstadoAnterior = habitacion.IdEstado,
+                                IdEstadoNuevo = estadoEnReserva.IdEstado,
+                                FechaCambio = DateTime.UtcNow,
+                                IdUsuario = idUsuario ?? 0,
+                                Observacion = "Reserva para hoy - cambia a En Reserva"
+                            });
+                            habitacion.IdEstado = estadoEnReserva.IdEstado;
+                            habitacion.FechaUltimoCambio = DateTime.UtcNow;
+                            habitacion.UsuarioCambio = idUsuario;
+
+                            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+                            {
+                                idHabitacion = habitacion.IdHabitacion,
+                                numero = habitacion.NumeroHabitacion,
+                                nuevoEstado = estadoEnReserva.Nombre,
+                                idEstado = estadoEnReserva.IdEstado,
+                                fechaUltimoCambio = DateTime.UtcNow
+                            });
+                        }
                     }
                 }
 
@@ -458,7 +475,8 @@ int estadoAnterior = habitacion.IdEstado;
 
                 return new ReservaResponseDto(
                     reserva.IdReserva, reserva.IdHabitacion,
-                    habitacion.NumeroHabitacion, $"{cliente.Nombres} {cliente.Apellidos}",
+                    habitacion.NumeroHabitacion,
+                    $"{cliente.Nombres} {cliente.Apellidos}",
                     reserva.FechaEntradaPrevista, reserva.FechaSalidaPrevista,
                     reserva.MontoTotal, reserva.Estado ?? ESTADO_CONFIRMADA);
             }
@@ -537,9 +555,7 @@ int estadoAnterior = habitacion.IdEstado;
 
             var comprobante = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdEstancia == idEstancia);
             if (comprobante is not null)
-            {
                 comprobante.MontoTotal = estancia.MontoTotal;
-            }
             await _db.SaveChangesAsync();
         }
 
@@ -556,9 +572,7 @@ int estadoAnterior = habitacion.IdEstado;
 
             var comprobante = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdEstancia == idEstancia);
             if (comprobante is not null)
-            {
                 comprobante.MontoTotal = estancia.MontoTotal;
-            }
             await _db.SaveChangesAsync();
         }
     }

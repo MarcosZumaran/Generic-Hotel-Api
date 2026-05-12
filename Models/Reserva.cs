@@ -24,6 +24,7 @@ public partial class Reserva
     public string? Estado { get; set; }
 
     public string? Observaciones { get; set; }
+    public bool EsNoShow { get; set; }
 
     public virtual Cliente Cliente { get; set; } = null!;
 
