@@ -3,6 +3,7 @@ using HotelGenericoApi.Data;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
+using HotelGenericoApi.Models.Exceptions;
 using HotelGenericoApi.Services.Interfaces;
 using NLua;
 using HotelGenericoApi.Extensions;
@@ -84,7 +85,7 @@ public class VentaService : IVentaService
     public async Task<VentaResponseDto> CreateAsync(VentaCreateDto dto, int? idUsuario)
     {
         if (dto.Items == null || dto.Items.Count == 0)
-            throw new InvalidOperationException("La venta debe tener al menos un producto.");
+            throw new BusinessRuleViolationException(BusinessErrorCode.ValidationError, "La venta debe tener al menos un producto.");
 
         // 1. Obtener cliente (puede ser null si es anónimo)
         Cliente? cliente = null;
@@ -92,14 +93,14 @@ public class VentaService : IVentaService
         {
             cliente = await _db.Clientes.FindAsync(dto.IdCliente.Value);
             if (cliente == null)
-                throw new InvalidOperationException("El cliente no existe.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "El cliente no existe.");
         }
         else
         {
             cliente = await _db.Clientes
                 .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000");
             if (cliente == null)
-                throw new InvalidOperationException("Cliente anónimo no configurado.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
         }
 
 // 2. Calcular totales y crear ItemVenta
@@ -112,7 +113,7 @@ public class VentaService : IVentaService
         {
             var producto = await _db.Productos.FindAsync(item.IdProducto);
             if (producto == null)
-                throw new InvalidOperationException($"El producto con ID {item.IdProducto} no existe.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.ProductNotFound, $"El producto con ID {item.IdProducto} no existe.");
 
             decimal montoSinIgvItem = producto.PrecioUnitario * item.Cantidad;
             montoSinIgvTotal += montoSinIgvItem;
@@ -179,7 +180,7 @@ public class VentaService : IVentaService
         await _db.SaveChangesAsync();
 
         return await GetByIdAsync(venta.IdVenta)
-            ?? throw new InvalidOperationException("Error al recuperar la venta creada.");
+            ?? throw new BusinessRuleViolationException(BusinessErrorCode.ValidationError, "Error al recuperar la venta creada.");
     }
 
     private async Task<int> ObtenerSiguienteCorrelativoAsync()

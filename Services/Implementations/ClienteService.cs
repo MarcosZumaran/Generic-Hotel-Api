@@ -5,6 +5,8 @@ using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Mappings;
 using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Extensions;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.Models.Exceptions;
 
 namespace HotelGenericoApi.Services.Implementations;
 
@@ -44,7 +46,7 @@ public class ClienteService : IClienteService
         // Verificar si ya existe un cliente con ese documento
         var existente = await GetByDocumentoAsync(dto.TipoDocumento, dto.Documento);
         if (existente is not null)
-            throw new InvalidOperationException("Ya existe un cliente con ese tipo y número de documento.");
+            throw new BusinessRuleViolationException(BusinessErrorCode.ClientDuplicate, "Ya existe un cliente con ese tipo y número de documento.");
 
         var entity = _mapper.FromCreate(dto);
         entity.FechaRegistro = DateTime.UtcNow;

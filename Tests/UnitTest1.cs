@@ -8,6 +8,7 @@ using HotelGenericoApi.Hubs;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Implementations;
 using HotelGenericoApi.Services.Interfaces;
+using HotelGenericoApi.Models.Exceptions;
 using Xunit;
 
 namespace HotelGenericoApi.Tests;
@@ -99,7 +100,7 @@ public class EstanciaServiceTests
             FechaCheckoutPrevista = DateTime.UtcNow.AddDays(2)
         };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.CheckInAsync(dto, 1));
+        await Assert.ThrowsAsync<BusinessRuleViolationException>(() => service.CheckInAsync(dto, 1));
     }
 
     [Fact]
@@ -235,7 +236,7 @@ public class EstanciaServiceTests
             MetodoPago = "005"
         };
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CrearReservaAsync(dto2, 1));
+        var ex = await Assert.ThrowsAsync<BusinessRuleViolationException>(() => service.CrearReservaAsync(dto2, 1));
         Assert.Contains("ya está reservada", ex.Message);
     }
 

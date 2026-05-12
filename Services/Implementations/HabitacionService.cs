@@ -5,6 +5,8 @@ using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Mappings;
 using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Models;
+using HotelGenericoApi.Models.Exceptions;
+using HotelGenericoApi.Models.Exceptions;
 using HotelGenericoApi.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
@@ -50,7 +52,7 @@ namespace HotelGenericoApi.Services.Implementations
         {
             bool existe = await _db.Habitaciones.AnyAsync(h => h.NumeroHabitacion == dto.NumeroHabitacion);
             if (existe)
-                throw new InvalidOperationException("Ya existe una habitación con ese número.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.HabitacionDuplicate, "Ya existe una habitación con ese número.");
 
             var entity = _mapper.FromCreate(dto);
             entity.FechaUltimoCambio = DateTime.UtcNow;
@@ -85,7 +87,7 @@ namespace HotelGenericoApi.Services.Implementations
             {
                 bool permitida = await _validadorEstadoService.EsTransicionValidaAsync(estadoAnterior ?? 0, dto.IdEstado.Value);
                 if (!permitida)
-                    throw new InvalidOperationException("Transición de estado no permitida.");
+                    throw new BusinessRuleViolationException(BusinessErrorCode.InvalidTransition, "Transición de estado no permitida.");
             }
 
             if (dto.Piso.HasValue) entity.Piso = dto.Piso.Value;
@@ -131,7 +133,7 @@ namespace HotelGenericoApi.Services.Implementations
 
             bool tieneEstanciaActiva = await _db.Estancias.AnyAsync(e => e.IdHabitacion == id && e.Estado == "Activa");
             if (tieneEstanciaActiva)
-                throw new InvalidOperationException("No se puede eliminar una habitación con estancias activas.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "No se puede eliminar una habitación con estancias activas.");
 
             _db.Habitaciones.Remove(entity);
             await _db.SaveChangesAsync();

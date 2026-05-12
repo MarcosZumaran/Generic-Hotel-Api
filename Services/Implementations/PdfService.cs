@@ -4,6 +4,8 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using HotelGenericoApi.Services.Interfaces;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.Models.Exceptions;
 
 namespace HotelGenericoApi.Services.Implementations;
 
@@ -20,7 +22,7 @@ public class PdfService : IPdfService
     public async Task<byte[]> GenerarPdfComprobanteAsync(int idComprobante)
     {
         var comp = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdComprobante == idComprobante);
-        if (comp == null) throw new InvalidOperationException("Comprobante no encontrado.");
+        if (comp == null) throw new BusinessRuleViolationException(BusinessErrorCode.ComprobanteNotFound, "Comprobante no encontrado.");
 
         string? numeroHabitacion = null;
         string? fechasHospedaje = null;
@@ -48,14 +50,14 @@ public class PdfService : IPdfService
     public async Task<byte[]> GenerarPdfVentaAsync(int idVenta)
     {
         var comp = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdVenta == idVenta);
-        if (comp == null) throw new InvalidOperationException("Comprobante de venta no encontrado.");
+        if (comp == null) throw new BusinessRuleViolationException(BusinessErrorCode.ComprobanteNotFound, "Comprobante de venta no encontrado.");
         return await GenerarPdfComprobanteAsync(comp.IdComprobante);
     }
 
     public async Task<byte[]> GenerarPdfEstanciaAsync(int idEstancia)
     {
         var comp = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdEstancia == idEstancia);
-        if (comp == null) throw new InvalidOperationException("Comprobante de estancia no encontrado.");
+        if (comp == null) throw new BusinessRuleViolationException(BusinessErrorCode.ComprobanteNotFound, "Comprobante de estancia no encontrado.");
         return await GenerarPdfComprobanteAsync(comp.IdComprobante);
     }
 

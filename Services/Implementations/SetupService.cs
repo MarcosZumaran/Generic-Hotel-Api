@@ -1,6 +1,7 @@
 using HotelGenericoApi.Data;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Models;
+using HotelGenericoApi.Models.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelGenericoApi.Services.Implementations;
@@ -22,10 +23,10 @@ public class SetupService
     public async Task CrearUsuarioAdminAsync(UsuarioCreateDto dto)
     {
         if (!await EsPrimerInicioAsync())
-            throw new InvalidOperationException("El sistema ya fue inicializado.");
+            throw new BusinessRuleViolationException(BusinessErrorCode.SetupAlreadyDone, "El sistema ya fue inicializado.");
 
         var rolAdmin = await _db.RolesUsuario.FirstOrDefaultAsync(r => r.Nombre == "Administrador")
-            ?? throw new InvalidOperationException("Rol Administrador no encontrado en el catálogo.");
+            ?? throw new BusinessRuleViolationException(BusinessErrorCode.ValidationError, "Rol Administrador no encontrado en el catálogo.");
 
         var usuario = new Usuario
         {

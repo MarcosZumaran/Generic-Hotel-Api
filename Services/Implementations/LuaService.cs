@@ -1,5 +1,6 @@
 using NLua;
 using System.Collections.Concurrent;
+using HotelGenericoApi.Models.Exceptions;
 
 namespace HotelGenericoApi.Services.Implementations;
 

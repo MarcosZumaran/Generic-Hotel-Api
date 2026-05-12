@@ -451,4 +451,17 @@ WHERE estado = 'Activa'
 GROUP BY CAST(fecha_checkin AS DATE);
 GO
 
+CREATE TABLE login_attempt (
+    id_login_attempt INT IDENTITY(1,1) PRIMARY KEY,
+    ip_address VARCHAR(50) NOT NULL,
+    username VARCHAR(100) NULL,
+    attempted_at DATETIME NOT NULL DEFAULT GETDATE(),
+    succeeded BIT NOT NULL DEFAULT 0,
+    user_agent VARCHAR(500) NULL
+);
+
+CREATE INDEX IX_login_attempt_ip_at ON login_attempt(ip_address, attempted_at);
+CREATE INDEX IX_login_attempt_username_at ON login_attempt(username, attempted_at);
+GO
+
 PRINT 'Base de datos HotelDB creada con éxito según el nuevo estándar.';

@@ -46,6 +46,7 @@ public partial class HotelDbContext : DbContext
     public virtual DbSet<VEstadoHabitacione> VEstadosHabitaciones { get; set; }
     public virtual DbSet<VOcupacionDiarium> VOcupacionDiaria { get; set; }
     public virtual DbSet<Venta> Ventas { get; set; }
+    public virtual DbSet<LoginAttempt> LoginAttempts { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -378,6 +379,17 @@ public partial class HotelDbContext : DbContext
             entity.HasOne(e => e.Usuario).WithMany(u => u.Ventas).HasForeignKey(e => e.IdUsuario).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasOne(e => e.MetodoPagoRel).WithMany(m => m.Ventas).HasForeignKey(e => e.MetodoPago).OnDelete(DeleteBehavior.ClientSetNull);
             entity.HasMany(e => e.ItemsVenta).WithOne(i => i.Venta).HasForeignKey(e => e.IdVenta);
+        });
+
+        modelBuilder.Entity<LoginAttempt>(entity =>
+        {
+            entity.ToTable("login_attempt");
+            entity.HasKey(e => e.IdLoginAttempt);
+            entity.Property(e => e.IpAddress).HasMaxLength(50);
+            entity.Property(e => e.Username).HasMaxLength(100);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.AttemptedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Succeeded).HasDefaultValue(false);
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -3,6 +3,7 @@ using HotelGenericoApi.Data;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
+using HotelGenericoApi.Models.Exceptions;
 using HotelGenericoApi.Services.Interfaces;
 using NLua;
 using HotelGenericoApi.Hubs;
@@ -71,17 +72,17 @@ namespace HotelGenericoApi.Services.Implementations
                 .Include(h => h.TipoHabitacion)
                 .FirstOrDefaultAsync(h => h.IdHabitacion == dto.IdHabitacion);
 
-            if (habitacion is null) throw new InvalidOperationException("La habitación no existe.");
+            if (habitacion is null) throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no existe.");
             if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
-                throw new InvalidOperationException("La habitación no está disponible para check‑in.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para check‑in.");
 
             // Validar reserva si se proporciona
             if (dto.IdReserva.HasValue)
             {
                 var reserva = await _db.Reservas.FindAsync(dto.IdReserva.Value);
-                if (reserva is null) throw new InvalidOperationException("La reserva no existe.");
-                if (reserva.Estado != "Confirmada") throw new InvalidOperationException("La reserva no está confirmada.");
-                if (reserva.IdHabitacion != dto.IdHabitacion) throw new InvalidOperationException("La habitación no coincide con la reserva.");
+                if (reserva is null) throw new BusinessRuleViolationException(BusinessErrorCode.ReservationNotFound, "La reserva no existe.");
+                if (reserva.Estado != "Confirmada") throw new BusinessRuleViolationException(BusinessErrorCode.ReservationNotFound, "La reserva no está confirmada.");
+                if (reserva.IdHabitacion != dto.IdHabitacion) throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict, "La habitación no coincide con la reserva.");
                 reserva.Estado = "Check‑in realizado";
             }
 
@@ -90,7 +91,7 @@ namespace HotelGenericoApi.Services.Implementations
             {
                 cliente = await _db.Clientes
                     .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
-                    ?? throw new InvalidOperationException("Cliente anónimo no configurado.");
+                    ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
             }
             else
             {
@@ -142,7 +143,7 @@ namespace HotelGenericoApi.Services.Implementations
             catch (Exception ex)
             {
                 Console.WriteLine("Error Lua: " + ex.Message);
-                throw new InvalidOperationException("Error al calcular el IGV.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.LuaExecutionError, "Error al calcular el IGV.");
             }
 
             decimal montoTotal = montoSinIgv + igvCalculado;
@@ -165,7 +166,7 @@ namespace HotelGenericoApi.Services.Implementations
             {
                 int estadoAnterior = habitacion.IdEstado;
                 bool permitida = await _validador.EsTransicionValidaAsync(estadoAnterior, estadoOcupada.IdEstado);
-                if (!permitida) throw new InvalidOperationException("Transición de estado no permitida.");
+                if (!permitida) throw new BusinessRuleViolationException(BusinessErrorCode.InvalidTransition, "Transición de estado no permitida.");
 
                 habitacion.IdEstado = estadoOcupada.IdEstado;
                 habitacion.FechaUltimoCambio = DateTime.UtcNow;
@@ -221,8 +222,8 @@ namespace HotelGenericoApi.Services.Implementations
                 .Include(e => e.Habitacion)
                 .FirstOrDefaultAsync(e => e.IdEstancia == idEstancia);
 
-            if (estancia is null) throw new InvalidOperationException("La estancia no existe.");
-            if (estancia.Estado != ESTADO_ACTIVA) throw new InvalidOperationException("La estancia no está activa.");
+            if (estancia is null) throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotFound, "La estancia no existe.");
+            if (estancia.Estado != ESTADO_ACTIVA) throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotActive, "La estancia no está activa.");
 
             estancia.Estado = ESTADO_FINALIZADA;
             estancia.FechaCheckoutReal = DateTime.UtcNow;
@@ -234,7 +235,7 @@ namespace HotelGenericoApi.Services.Implementations
                 int estadoAnterior = habitacion.IdEstado;
 
                 bool permitida = await _validador.EsTransicionValidaAsync(estadoAnterior, estadoLimpieza.IdEstado);
-                if (!permitida) throw new InvalidOperationException("Transición de estado no permitida.");
+                if (!permitida) throw new BusinessRuleViolationException(BusinessErrorCode.InvalidTransition, "Transición de estado no permitida.");
 
                 habitacion.IdEstado = estadoLimpieza.IdEstado;
                 habitacion.FechaUltimoCambio = DateTime.UtcNow;
@@ -294,11 +295,11 @@ namespace HotelGenericoApi.Services.Implementations
                 .Include(e => e.ClienteTitular)
                 .FirstOrDefaultAsync(e => e.IdEstancia == idEstancia);
 
-            if (estancia is null) throw new InvalidOperationException("Estancia no encontrada.");
-            if (estancia.Estado != ESTADO_ACTIVA) throw new InvalidOperationException("La estancia no está activa.");
+            if (estancia is null) throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotFound, "Estancia no encontrada.");
+            if (estancia.Estado != ESTADO_ACTIVA) throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotActive, "La estancia no está activa.");
 
             var producto = await _db.Productos.FindAsync(dto.IdProducto);
-            if (producto is null) throw new InvalidOperationException("Producto no encontrado.");
+            if (producto is null) throw new BusinessRuleViolationException(BusinessErrorCode.ProductNotFound, "Producto no encontrado.");
 
             var itemEstancia = new ItemEstancium
             {
@@ -336,20 +337,20 @@ namespace HotelGenericoApi.Services.Implementations
                     .Include(h => h.TipoHabitacion)
                     .FirstOrDefaultAsync(h => h.IdHabitacion == dto.IdHabitacion);
 
-                if (habitacion is null) throw new InvalidOperationException("La habitación no existe.");
+                if (habitacion is null) throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no existe.");
                 if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
-                    throw new InvalidOperationException("La habitación no está disponible para reserva.");
+                    throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para reserva.");
 
                 var conflicto = await _db.Reservas.AnyAsync(r =>
                     r.IdHabitacion == dto.IdHabitacion && r.Estado != "Cancelada" &&
                     r.FechaEntradaPrevista < dto.FechaSalidaPrevista && r.FechaSalidaPrevista > dto.FechaEntradaPrevista);
-                if (conflicto) throw new InvalidOperationException("La habitación ya está reservada en ese rango de fechas.");
+                if (conflicto) throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict, "La habitación ya está reservada en ese rango de fechas.");
 
                 Cliente cliente;
                 if (dto.UsarClienteAnonimo)
                 {
                     cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
-                        ?? throw new InvalidOperationException("Cliente anónimo no configurado.");
+                        ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
                 }
                 else
                 {
@@ -400,7 +401,7 @@ namespace HotelGenericoApi.Services.Implementations
                 catch (Exception ex)
                 {
                     Console.WriteLine("Error Lua: " + ex.Message);
-                    throw new InvalidOperationException("Error al calcular el IGV.");
+                    throw new BusinessRuleViolationException(BusinessErrorCode.LuaExecutionError, "Error al calcular el IGV.");
                 }
 
                 decimal montoTotal = montoSinIgv + igvCalculado;
@@ -426,7 +427,7 @@ namespace HotelGenericoApi.Services.Implementations
                     {
 int estadoAnterior = habitacion.IdEstado;
                         bool permitida = await _validador.EsTransicionValidaAsync(estadoAnterior, estadoOcupada.IdEstado);
-                        if (!permitida) throw new InvalidOperationException("Transición de estado no permitida.");
+                        if (!permitida) throw new BusinessRuleViolationException(BusinessErrorCode.InvalidTransition, "Transición de estado no permitida.");
 
                         habitacion.IdEstado = estadoOcupada.IdEstado;
                         habitacion.FechaUltimoCambio = DateTime.UtcNow;
@@ -513,11 +514,11 @@ int estadoAnterior = habitacion.IdEstado;
 
         public async Task ActualizarConsumoAsync(int idEstancia, int idItem, int nuevaCantidad, int? idUsuario)
         {
-            if (nuevaCantidad < 1) throw new InvalidOperationException("La cantidad debe ser mayor a 0.");
-            var estancia = await _db.Estancias.FindAsync(idEstancia) ?? throw new InvalidOperationException("Estancia no encontrada.");
-            if (estancia.Estado != ESTADO_ACTIVA) throw new InvalidOperationException("La estancia no está activa.");
-            var item = await _db.ItemsEstancia.FindAsync(idItem) ?? throw new InvalidOperationException("Item no encontrado.");
-            if (item.IdEstancia != idEstancia) throw new InvalidOperationException("El item no pertenece a esta estancia.");
+            if (nuevaCantidad < 1) throw new BusinessRuleViolationException(BusinessErrorCode.QuantityInvalid, "La cantidad debe ser mayor a 0.");
+            var estancia = await _db.Estancias.FindAsync(idEstancia) ?? throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotFound, "Estancia no encontrada.");
+            if (estancia.Estado != ESTADO_ACTIVA) throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotActive, "La estancia no está activa.");
+            var item = await _db.ItemsEstancia.FindAsync(idItem) ?? throw new BusinessRuleViolationException(BusinessErrorCode.ProductNotFound, "Item no encontrado.");
+            if (item.IdEstancia != idEstancia) throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotActive, "El item no pertenece a esta estancia.");
 
             decimal subtotalAnterior = item.Subtotal ?? (item.PrecioUnitario * item.Cantidad);
             item.Cantidad = nuevaCantidad;
@@ -536,10 +537,10 @@ int estadoAnterior = habitacion.IdEstado;
 
         public async Task EliminarConsumoAsync(int idEstancia, int idItem, int? idUsuario)
         {
-            var estancia = await _db.Estancias.FindAsync(idEstancia) ?? throw new InvalidOperationException("Estancia no encontrada.");
-            if (estancia.Estado != ESTADO_ACTIVA) throw new InvalidOperationException("La estancia no está activa.");
-            var item = await _db.ItemsEstancia.FindAsync(idItem) ?? throw new InvalidOperationException("Item no encontrado.");
-            if (item.IdEstancia != idEstancia) throw new InvalidOperationException("El item no pertenece a esta estancia.");
+            var estancia = await _db.Estancias.FindAsync(idEstancia) ?? throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotFound, "Estancia no encontrada.");
+            if (estancia.Estado != ESTADO_ACTIVA) throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotActive, "La estancia no está activa.");
+            var item = await _db.ItemsEstancia.FindAsync(idItem) ?? throw new BusinessRuleViolationException(BusinessErrorCode.ProductNotFound, "Item no encontrado.");
+            if (item.IdEstancia != idEstancia) throw new BusinessRuleViolationException(BusinessErrorCode.EstanciaNotActive, "El item no pertenece a esta estancia.");
 
             decimal subtotal = item.Subtotal ?? (item.PrecioUnitario * item.Cantidad);
             _db.ItemsEstancia.Remove(item);
