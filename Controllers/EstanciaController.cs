@@ -172,4 +172,19 @@ public class EstanciaController : ControllerBase
             return BadRequest(new { mensaje = ex.Message });
         }
     }
+
+    [HttpPut("reserva/{id}/cancelar")]
+    public async Task<IActionResult> CancelarReserva(int id)
+    {
+        try
+        {
+            var idUsuario = ObtenerIdUsuario();
+            await _service.CancelarReservaAsync(id, idUsuario);
+            return Ok(new { mensaje = "Reserva cancelada correctamente." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
 }

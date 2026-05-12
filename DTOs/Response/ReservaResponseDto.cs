@@ -8,5 +8,8 @@ public sealed record ReservaResponseDto(
     DateTime FechaEntradaPrevista,
     DateTime FechaSalidaPrevista,
     decimal MontoTotal,
-    string Estado
+    string Estado,
+    string? DocumentoCliente,
+    string? Observaciones,
+    bool EsNoShow
 );

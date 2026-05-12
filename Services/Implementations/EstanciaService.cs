@@ -177,7 +177,9 @@ namespace HotelGenericoApi.Services.Implementations
                     IdEstadoNuevo = estadoOcupada.IdEstado,
                     FechaCambio = DateTime.UtcNow,
                     IdUsuario = idUsuario ?? 0,
-                    Observacion = "Check‑In automático"
+                    Observacion = dto.IdReserva.HasValue
+                        ? $"Check-in desde reserva #{dto.IdReserva.Value}"
+                        : "Check-in directo (walk-in)"
                 });
             }
 
@@ -478,7 +480,11 @@ namespace HotelGenericoApi.Services.Implementations
                     habitacion.NumeroHabitacion,
                     $"{cliente.Nombres} {cliente.Apellidos}",
                     reserva.FechaEntradaPrevista, reserva.FechaSalidaPrevista,
-                    reserva.MontoTotal, reserva.Estado ?? ESTADO_CONFIRMADA);
+                    reserva.MontoTotal, reserva.Estado ?? ESTADO_CONFIRMADA,
+                    $"{cliente.TipoDocumento}: {cliente.Documento}",
+                    reserva.Observaciones,
+                    reserva.EsNoShow
+                );
             }
             catch
             {
@@ -505,7 +511,12 @@ namespace HotelGenericoApi.Services.Implementations
                 reserva.Cliente != null
                     ? $"{reserva.Cliente.Nombres} {reserva.Cliente.Apellidos}" : null,
                 reserva.FechaEntradaPrevista, reserva.FechaSalidaPrevista,
-                reserva.MontoTotal, reserva.Estado ?? "Desconocido");
+                reserva.MontoTotal, reserva.Estado ?? "Desconocido",
+                reserva.Cliente != null
+                    ? $"{reserva.Cliente.TipoDocumento}: {reserva.Cliente.Documento}" : null,
+                reserva.Observaciones,
+                reserva.EsNoShow
+            );
         }
 
         public async Task<IEnumerable<ReservaResponseDto>> GetReservasPorHabitacionAsync(int idHabitacion)
@@ -521,7 +532,12 @@ namespace HotelGenericoApi.Services.Implementations
                     r.Cliente != null
                         ? $"{r.Cliente.Nombres} {r.Cliente.Apellidos}" : null,
                     r.FechaEntradaPrevista, r.FechaSalidaPrevista, r.MontoTotal,
-                    r.Estado ?? "Pendiente"))
+                    r.Estado ?? "Pendiente",
+                    r.Cliente != null
+                        ? $"{r.Cliente.TipoDocumento}: {r.Cliente.Documento}" : null,
+                    r.Observaciones,
+                    r.EsNoShow
+                ))
                 .ToListAsync();
         }
 
@@ -573,6 +589,59 @@ namespace HotelGenericoApi.Services.Implementations
             var comprobante = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdEstancia == idEstancia);
             if (comprobante is not null)
                 comprobante.MontoTotal = estancia.MontoTotal;
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task CancelarReservaAsync(int idReserva, int? idUsuario)
+        {
+            var reserva = await _db.Reservas
+                .Include(r => r.Habitacion)
+                .FirstOrDefaultAsync(r => r.IdReserva == idReserva);
+
+            if (reserva is null)
+                throw new InvalidOperationException("La reserva no existe.");
+
+            if (reserva.Estado == "Cancelada")
+                throw new InvalidOperationException("La reserva ya está cancelada.");
+
+            reserva.Estado = "Cancelada";
+
+            // Si la habitación está en estado "En Reserva", devolverla a "Disponible"
+            var estadoEnReserva = await _db.EstadosHabitacion
+                .FirstOrDefaultAsync(e => e.Nombre == "En Reserva");
+            var estadoDisponible = await _db.EstadosHabitacion
+                .FirstOrDefaultAsync(e => e.Nombre == "Disponible");
+
+            if (reserva.Habitacion != null &&
+                estadoEnReserva != null &&
+                estadoDisponible != null &&
+                reserva.Habitacion.IdEstado == estadoEnReserva.IdEstado)
+            {
+                int estadoAnterior = reserva.Habitacion.IdEstado;
+                reserva.Habitacion.IdEstado = estadoDisponible.IdEstado;
+                reserva.Habitacion.FechaUltimoCambio = DateTime.UtcNow;
+                reserva.Habitacion.UsuarioCambio = idUsuario;
+
+                _db.HistorialesEstadoHabitacion.Add(new HistorialEstadoHabitacion
+                {
+                    IdHabitacion = reserva.Habitacion.IdHabitacion,
+                    IdEstadoAnterior = estadoAnterior,
+                    IdEstadoNuevo = estadoDisponible.IdEstado,
+                    FechaCambio = DateTime.UtcNow,
+                    IdUsuario = idUsuario ?? 0,
+                    Observacion = $"Reserva #{idReserva} cancelada - vuelve a Disponible"
+                });
+
+                await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+                {
+                    idHabitacion = reserva.Habitacion.IdHabitacion,
+                    numero = reserva.Habitacion.NumeroHabitacion,
+                    nuevoEstado = estadoDisponible.Nombre,
+                    idEstado = estadoDisponible.IdEstado,
+                    fechaUltimoCambio = DateTime.UtcNow
+                });
+            }
+
             await _db.SaveChangesAsync();
         }
     }

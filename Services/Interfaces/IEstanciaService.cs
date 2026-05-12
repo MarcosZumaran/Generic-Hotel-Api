@@ -16,4 +16,5 @@ public interface IEstanciaService
     Task<IEnumerable<ItemConsumoResponseDto>> GetConsumosAsync(int idEstancia);
     Task ActualizarConsumoAsync(int idEstancia, int idItem, int nuevaCantidad, int? idUsuario);
     Task EliminarConsumoAsync(int idEstancia, int idItem, int? idUsuario);
+    Task CancelarReservaAsync(int idReserva, int? idUsuario);
 }
