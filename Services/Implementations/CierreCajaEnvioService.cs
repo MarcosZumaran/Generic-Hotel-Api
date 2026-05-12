@@ -1,18 +1,22 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 using HotelGenericoApi.Data;
 using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
+using HotelGenericoApi.Hubs;
 
 namespace HotelGenericoApi.Services.Implementations
 {
     public class CierreCajaEnvioService : ICierreCajaEnvioService
     {
         private readonly HotelDbContext _db;
+        private readonly IHubContext<HabitacionHub> _hubContext;
 
-        public CierreCajaEnvioService(HotelDbContext db)
+        public CierreCajaEnvioService(HotelDbContext db, IHubContext<HabitacionHub> hubContext)
         {
             _db = db;
+            _hubContext = hubContext;
         }
 
         public async Task<CierreCajaEnvioDto> GetEstadoAsync(DateOnly fecha)
@@ -44,7 +48,7 @@ namespace HotelGenericoApi.Services.Implementations
                 envio = new CierreCajaEnvio
                 {
                     Fecha = fecha,
-                    IdEstadoSunat = 2, // Enviado
+                    IdEstadoSunat = 2,
                     FechaEnvio = DateTime.UtcNow,
                     IntentosEnvio = 1,
                     HashXml = "hash_simulado"
@@ -60,6 +64,9 @@ namespace HotelGenericoApi.Services.Implementations
             }
 
             await _db.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("CierreCajaEnviado", new { fecha });
+
             return true;
         }
     }

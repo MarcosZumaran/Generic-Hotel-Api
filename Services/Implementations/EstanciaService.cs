@@ -213,6 +213,14 @@ namespace HotelGenericoApi.Services.Implementations
 
             await _db.Entry(estancia).Reference(e => e.Habitacion).LoadAsync();
             await _db.Entry(estancia).Reference(e => e.ClienteTitular).LoadAsync();
+
+            await _hubContext.Clients.All.SendAsync("NuevaEstancia", new
+            {
+                idEstancia = estancia.IdEstancia,
+                numeroHabitacion = estancia.Habitacion?.NumeroHabitacion,
+                cliente = $"{cliente.Nombres} {cliente.Apellidos}"
+            });
+
             return MapToResponse(estancia);
         }
 

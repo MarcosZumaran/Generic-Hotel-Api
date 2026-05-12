@@ -1,16 +1,23 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 using HotelGenericoApi.Data;
 using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Extensions;
+using HotelGenericoApi.Hubs;
 
 namespace HotelGenericoApi.Services.Implementations;
 
 public class ComprobanteService : IComprobanteService
 {
     private readonly HotelDbContext _db;
+    private readonly IHubContext<HabitacionHub> _hubContext;
 
-    public ComprobanteService(HotelDbContext db) => _db = db;
+    public ComprobanteService(HotelDbContext db, IHubContext<HabitacionHub> hubContext)
+    {
+        _db = db;
+        _hubContext = hubContext;
+    }
 
     public async Task<IEnumerable<ComprobanteResponseDto>> GetAllAsync()
     {
@@ -53,11 +60,20 @@ public class ComprobanteService : IComprobanteService
         var entity = await _db.Comprobantes.FindAsync(id);
         if (entity is null) return false;
 
-        entity.IdEstadoSunat = 2; // Enviado
+        entity.IdEstadoSunat = 2;
         entity.FechaEnvio = DateTime.UtcNow;
         entity.IntentosEnvio = (entity.IntentosEnvio ?? 0) + 1;
         entity.HashXml = hashXml;
         await _db.SaveChangesAsync();
+
+        await _hubContext.Clients.All.SendAsync("ComprobanteEmitido", new
+        {
+            idComprobante = entity.IdComprobante,
+            tipo = entity.TipoComprobante == "03" ? "Boleta" : "Factura",
+            monto = entity.MontoTotal,
+            fecha = entity.FechaEmision
+        });
+
         return true;
     }
 

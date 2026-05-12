@@ -6,7 +6,6 @@ using HotelGenericoApi.Mappings;
 using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Models.Exceptions;
-using HotelGenericoApi.Models.Exceptions;
 using HotelGenericoApi.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
