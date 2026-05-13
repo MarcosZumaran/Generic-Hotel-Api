@@ -86,4 +86,26 @@ public class ClienteService : IClienteService
             PageSize = paged.PageSize
         };
     }
+
+    public async Task<IEnumerable<ClienteResponseDto>> BuscarAsync(string termino, int maxResults)
+    {
+        return await _db.Clientes
+            .Where(c => c.Nombres.Contains(termino) || c.Apellidos.Contains(termino) || c.Documento.Contains(termino))
+            .Take(maxResults)
+            .Select(c => new ClienteResponseDto(
+                c.IdCliente,
+                c.TipoDocumento,
+                c.Documento,
+                c.Nombres,
+                c.Apellidos,
+                c.Nacionalidad,
+                c.FechaNacimiento,
+                c.Telefono,
+                c.Email,
+                c.Direccion,
+                c.FechaRegistro ?? DateTime.UtcNow,
+                c.FechaVerificacionReniec
+            ))
+            .ToListAsync();
+    }
 }

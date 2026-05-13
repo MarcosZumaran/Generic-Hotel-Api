@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using HotelGenericoApi.DTOs.Response;
 
 namespace HotelGenericoApi.Controllers;
 
@@ -11,10 +12,12 @@ namespace HotelGenericoApi.Controllers;
 public class ClienteController : ControllerBase
 {
     private readonly IClienteService _service;
+    private readonly IConfiguration _configuration;
 
-    public ClienteController(IClienteService service)
+    public ClienteController(IClienteService service, IConfiguration configuration)
     {
         _service = service;
+        _configuration = configuration;
     }
 
     [HttpGet]
@@ -64,5 +67,34 @@ public class ClienteController : ControllerBase
     {
         var deleted = await _service.DeleteAsync(id);
         return deleted ? NoContent() : NotFound();
+    }
+
+
+    // Endpoint para consultar datos de RENIEC mediante VerificaPE
+    [HttpGet("reniec/{dni}")]
+    public async Task<IActionResult> ConsultarReniec(string dni)
+    {
+        var apiKey = _configuration["VerificaPE:ApiKey"];
+        var baseUrl = _configuration["VerificaPE:BaseUrl"];
+
+        using var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+
+        var response = await httpClient.GetAsync($"{baseUrl}/dni/{dni}");
+        var content = await response.Content.ReadAsStringAsync();
+
+        return StatusCode((int)response.StatusCode, content);
+    }
+
+    [HttpGet("buscar")]
+    [Authorize]
+    public async Task<IActionResult> BuscarClientes([FromQuery] string termino)
+    {
+        if (string.IsNullOrWhiteSpace(termino) || termino.Length < 2)
+            return Ok(Array.Empty<ClienteResponseDto>());
+
+        var resultados = await _service.BuscarAsync(termino, 5);
+        return Ok(resultados);
     }
 }

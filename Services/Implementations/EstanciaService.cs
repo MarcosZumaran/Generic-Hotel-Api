@@ -63,7 +63,6 @@ namespace HotelGenericoApi.Services.Implementations
 
             return e is not null ? MapToResponse(e) : null;
         }
-
         public async Task<EstanciaResponseDto> CheckInAsync(CheckInDto dto, int? idUsuario)
         {
             var habitacion = await _db.Habitaciones
@@ -71,46 +70,75 @@ namespace HotelGenericoApi.Services.Implementations
                 .Include(h => h.TipoHabitacion)
                 .FirstOrDefaultAsync(h => h.IdHabitacion == dto.IdHabitacion);
 
-            if (habitacion is null) throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no existe.");
+            if (habitacion is null)
+                throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no existe.");
             if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
-                throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para check-in.");
+                throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para check‑in.");
 
             // Validar reserva si se proporciona
             if (dto.IdReserva.HasValue)
             {
                 var reserva = await _db.Reservas.FindAsync(dto.IdReserva.Value);
-                if (reserva is null) throw new BusinessRuleViolationException(BusinessErrorCode.ReservationNotFound, "La reserva no existe.");
-                if (reserva.Estado != "Confirmada") throw new BusinessRuleViolationException(BusinessErrorCode.ReservationNotFound, "La reserva no está confirmada.");
-                if (reserva.IdHabitacion != dto.IdHabitacion) throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict, "La habitación no coincide con la reserva.");
-                reserva.Estado = "Check-in realizado";
+                if (reserva is null)
+                    throw new BusinessRuleViolationException(BusinessErrorCode.ReservationNotFound, "La reserva no existe.");
+                if (reserva.Estado != "Confirmada")
+                    throw new BusinessRuleViolationException(BusinessErrorCode.ReservationNotFound, "La reserva no está confirmada.");
+                if (reserva.IdHabitacion != dto.IdHabitacion)
+                    throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict, "La habitación no coincide con la reserva.");
+                reserva.Estado = "Check‑in realizado";
             }
 
-            Cliente cliente;
-            if (dto.UsarClienteAnonimo)
+            // ---------- NUEVA LÓGICA DE CLIENTE ----------
+            Cliente? cliente = null;         // será el titular de la estancia
+            Cliente? clienteParaComprobante = null; // datos reales a mostrar en el comprobante
+
+            if (dto.IdClienteExistente.HasValue)
             {
-                cliente = await _db.Clientes
-                    .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
-                    ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
+                cliente = await _db.Clientes.FindAsync(dto.IdClienteExistente.Value);
+                if (cliente == null)
+                    throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "El cliente seleccionado no existe.");
+                clienteParaComprobante = cliente;
+            }
+            else if (dto.GuardarCliente)
+            {
+                if (dto.UsarClienteAnonimo)
+                {
+                    cliente = await _db.Clientes
+                        .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
+                        ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
+                }
+                else
+                {
+                    cliente = await _db.Clientes.FirstOrDefaultAsync(
+                        c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
+                    if (cliente == null)
+                    {
+                        cliente = new Cliente
+                        {
+                            TipoDocumento = dto.TipoDocumento,
+                            Documento = dto.Documento,
+                            Nombres = dto.Nombres,
+                            Apellidos = dto.Apellidos,
+                            Telefono = dto.Telefono,
+                            FechaRegistro = DateTime.UtcNow
+                        };
+                        _db.Clientes.Add(cliente);
+                        await _db.SaveChangesAsync();
+                    }
+                }
+                clienteParaComprobante = cliente;
             }
             else
             {
-                cliente = await _db.Clientes.FirstOrDefaultAsync(
-                    c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
-                if (cliente is null)
-                {
-                    cliente = new Cliente
-                    {
-                        TipoDocumento = dto.TipoDocumento,
-                        Documento = dto.Documento,
-                        Nombres = dto.Nombres,
-                        Apellidos = dto.Apellidos,
-                        Telefono = dto.Telefono,
-                        FechaRegistro = DateTime.UtcNow
-                    };
-                    _db.Clientes.Add(cliente);
-                    await _db.SaveChangesAsync();
-                }
+                // No se guarda cliente → usamos el cliente anónimo como titular
+                cliente = await _db.Clientes
+                    .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
+                    ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
+                // Para el comprobante usaremos los datos reales del formulario (no el anónimo)
+                clienteParaComprobante = null; // lo manejaremos abajo
             }
+
+            // ---------- FIN NUEVA LÓGICA ----------
 
             int noches = (int)(dto.FechaCheckoutPrevista.Date - DateTime.UtcNow.Date).TotalDays;
             if (noches < 1) noches = 1;
@@ -126,7 +154,7 @@ namespace HotelGenericoApi.Services.Implementations
             decimal montoSinIgv = precioNoche * noches;
 
             var configuracion = await _db.Configuracion.FirstOrDefaultAsync();
-            decimal tasaIgv = configuracion?.TasaIgvHotel ?? 18m; // default 18%
+            decimal tasaIgv = configuracion?.TasaIgvHotel ?? 18m;
             decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
 
             try
@@ -164,7 +192,8 @@ namespace HotelGenericoApi.Services.Implementations
             {
                 int estadoAnterior = habitacion.IdEstado;
                 bool permitida = await _validador.EsTransicionValidaAsync(estadoAnterior, estadoOcupada.IdEstado);
-                if (!permitida) throw new BusinessRuleViolationException(BusinessErrorCode.InvalidTransition, "Transición de estado no permitida.");
+                if (!permitida)
+                    throw new BusinessRuleViolationException(BusinessErrorCode.InvalidTransition, "Transición de estado no permitida.");
 
                 habitacion.IdEstado = estadoOcupada.IdEstado;
                 habitacion.FechaUltimoCambio = DateTime.UtcNow;
@@ -185,7 +214,7 @@ namespace HotelGenericoApi.Services.Implementations
 
             await _db.SaveChangesAsync();
 
-            // Notificar cambio de estado con nombre
+            // Notificar cambio de estado
             await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
             {
                 idHabitacion = habitacion.IdHabitacion,
@@ -195,6 +224,7 @@ namespace HotelGenericoApi.Services.Implementations
                 fechaUltimoCambio = DateTime.UtcNow
             });
 
+            // Crear comprobante con los datos correctos
             var comprobante = new Comprobante
             {
                 IdEstancia = estancia.IdEstancia,
@@ -204,9 +234,11 @@ namespace HotelGenericoApi.Services.Implementations
                 FechaEmision = DateTime.UtcNow,
                 MontoTotal = montoTotal,
                 IgvMonto = igvCalculado,
-                ClienteDocumentoTipo = cliente.TipoDocumento,
-                ClienteDocumentoNum = cliente.Documento,
-                ClienteNombre = $"{cliente.Nombres} {cliente.Apellidos}",
+                ClienteDocumentoTipo = clienteParaComprobante?.TipoDocumento ?? dto.TipoDocumento,
+                ClienteDocumentoNum = clienteParaComprobante?.Documento ?? dto.Documento,
+                ClienteNombre = clienteParaComprobante != null
+                    ? $"{clienteParaComprobante.Nombres} {clienteParaComprobante.Apellidos}"
+                    : $"{dto.Nombres} {dto.Apellidos}",
                 MetodoPago = dto.MetodoPago,
                 IdEstadoSunat = 1
             };
@@ -225,6 +257,7 @@ namespace HotelGenericoApi.Services.Implementations
 
             return MapToResponse(estancia);
         }
+
 
         public async Task<EstanciaResponseDto> CheckOutAsync(int idEstancia, int? idUsuario)
         {
@@ -348,34 +381,58 @@ namespace HotelGenericoApi.Services.Implementations
                     .Include(h => h.TipoHabitacion)
                     .FirstOrDefaultAsync(h => h.IdHabitacion == dto.IdHabitacion);
 
-                if (habitacion is null) throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no existe.");
+                if (habitacion is null)
+                    throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no existe.");
                 if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
                     throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para reserva.");
 
-                // Cliente
-                Cliente cliente;
-                if (dto.UsarClienteAnonimo)
+                // ---------- NUEVA LÓGICA DE CLIENTE ----------
+                Cliente? cliente = null;
+                Cliente? clienteParaComprobante = null;
+
+                if (dto.IdClienteExistente.HasValue)
                 {
-                    cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
-                        ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
+                    cliente = await _db.Clientes.FindAsync(dto.IdClienteExistente.Value);
+                    if (cliente == null)
+                        throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "El cliente seleccionado no existe.");
+                    clienteParaComprobante = cliente;
+                }
+                else if (dto.GuardarCliente)
+                {
+                    if (dto.UsarClienteAnonimo)
+                    {
+                        cliente = await _db.Clientes
+                            .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
+                            ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
+                    }
+                    else
+                    {
+                        cliente = await _db.Clientes.FirstOrDefaultAsync(
+                            c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
+                        if (cliente == null)
+                        {
+                            cliente = new Cliente
+                            {
+                                TipoDocumento = dto.TipoDocumento,
+                                Documento = dto.Documento,
+                                Nombres = dto.Nombres,
+                                Apellidos = dto.Apellidos,
+                                Telefono = dto.Telefono,
+                                FechaRegistro = DateTime.UtcNow
+                            };
+                            _db.Clientes.Add(cliente);
+                            await _db.SaveChangesAsync();
+                        }
+                    }
+                    clienteParaComprobante = cliente;
                 }
                 else
                 {
-                    cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
-                    if (cliente is null)
-                    {
-                        cliente = new Cliente
-                        {
-                            TipoDocumento = dto.TipoDocumento,
-                            Documento = dto.Documento,
-                            Nombres = dto.Nombres,
-                            Apellidos = dto.Apellidos,
-                            Telefono = dto.Telefono,
-                            FechaRegistro = DateTime.UtcNow
-                        };
-                        _db.Clientes.Add(cliente);
-                        await _db.SaveChangesAsync();
-                    }
+                    // Sin guardar: usamos el cliente anónimo como titular
+                    cliente = await _db.Clientes
+                        .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
+                        ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
+                    clienteParaComprobante = null;
                 }
 
                 int noches = (int)(dto.FechaSalidaPrevista.Date - dto.FechaEntradaPrevista.Date).TotalDays;
@@ -426,13 +483,13 @@ namespace HotelGenericoApi.Services.Implementations
                     EsNoShow = false
                 };
                 _db.Reservas.Add(reserva);
-                await _db.SaveChangesAsync(); // Guardamos para obtener el ID
+                await _db.SaveChangesAsync();
 
                 // Validación de conflicto excluyendo la propia reserva
                 var conflicto = await _db.Reservas.AnyAsync(r =>
                     r.IdHabitacion == dto.IdHabitacion && r.Estado != "Cancelada" &&
                     r.FechaEntradaPrevista < dto.FechaSalidaPrevista && r.FechaSalidaPrevista > dto.FechaEntradaPrevista
-                    && r.IdReserva != reserva.IdReserva); // ¡Excluir la recién creada!
+                    && r.IdReserva != reserva.IdReserva);
 
                 if (conflicto)
                     throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict,

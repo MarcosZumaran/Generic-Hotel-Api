@@ -12,4 +12,6 @@ public sealed record ReservaCreateDto
     public DateTime FechaSalidaPrevista { get; init; }
     public string MetodoPago { get; init; } = "005";
     public bool UsarClienteAnonimo { get; init; } = false;
+    public bool GuardarCliente { get; set; } = true;
+    public int? IdClienteExistente { get; set; }
 }

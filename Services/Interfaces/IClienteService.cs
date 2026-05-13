@@ -12,4 +12,5 @@ public interface IClienteService
     Task<bool> UpdateAsync(int id, ClienteUpdateDto dto);
     Task<bool> DeleteAsync(int id);
     Task<PagedResult<ClienteResponseDto>> GetPagedAsync(int page, int pageSize);
+    Task<IEnumerable<ClienteResponseDto>> BuscarAsync(string termino, int maxResults);
 }

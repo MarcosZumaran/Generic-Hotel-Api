@@ -11,5 +11,7 @@ public sealed record CheckInDto
     public DateTime FechaCheckoutPrevista { get; init; }
     public string MetodoPago { get; init; } = "005";
     public bool UsarClienteAnonimo { get; init; } = false;
-    public int? IdReserva { get; init; } // <--- nuevo campo
+    public int? IdReserva { get; init; }
+    public bool GuardarCliente { get; set; } = true;
+    public int? IdClienteExistente { get; set; }
 }
