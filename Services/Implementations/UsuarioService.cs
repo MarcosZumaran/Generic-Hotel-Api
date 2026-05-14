@@ -130,7 +130,12 @@ public class UsuarioService : IUsuarioService
             usuario.FechaCreacion ?? DateTime.MinValue
         );
 
-        return new LoginResponseDto(token, DateTime.UtcNow.AddHours(8), usuarioDto);
+        // Obtener la expiración desde los claims del token
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jwtToken = tokenHandler.ReadJwtToken(token);
+        var expiration = jwtToken.ValidTo;
+
+        return new LoginResponseDto(token, expiration, usuarioDto);
     }
 
     private string GenerarToken(Usuario usuario)
@@ -139,18 +144,27 @@ public class UsuarioService : IUsuarioService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        // Determinar expiración según rol, expresiones en minutos
+        int expirationMinutes = usuario.Rol?.Nombre switch
+        {
+            "Administrador" => 10,
+            "Recepcion" => 720,
+            "Limpieza" => 1440,
+            _ => 30 // Por defecto
+        };
+
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
-            new Claim(ClaimTypes.Name, usuario.Username),
-            new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "")
-        };
+        new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
+        new Claim(ClaimTypes.Name, usuario.Username),
+        new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "")
+    };
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(8),
+            expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
             signingCredentials: credentials
         );
 
