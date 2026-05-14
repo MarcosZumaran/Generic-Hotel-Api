@@ -120,6 +120,22 @@ builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// Seed de usuarios por defecto en desarrollo
+if (builder.Environment.IsDevelopment())
+{
+    using var scope = builder.Services.BuildServiceProvider().CreateScope();
+    var setupService = scope.ServiceProvider.GetRequiredService<SetupService>();
+    try
+    {
+        await setupService.CrearUsuariosPorDefectoAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "No se pudieron crear los usuarios por defecto. Puede que ya existan.");
+    }
+}
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

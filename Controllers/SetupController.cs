@@ -41,4 +41,22 @@ public class SetupController : ControllerBase
             return BadRequest(new { mensaje = ex.Message });
         }
     }
+
+    [HttpPost("crear-usuarios-defecto")]
+    public async Task<IActionResult> CrearUsuariosDefecto()
+    {
+        try
+        {
+            var esPrimerInicio = await _setupService.EsPrimerInicioAsync();
+            if (!esPrimerInicio)
+                return BadRequest(new { mensaje = "El sistema ya tiene usuarios. Este endpoint solo debe usarse en primer inicio o desarrollo." });
+
+            await _setupService.CrearUsuariosPorDefectoAsync();
+            return Ok(new { mensaje = "Usuarios por defecto creados: admin, recepcion, limpieza." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
 }
