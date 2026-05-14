@@ -63,6 +63,7 @@ namespace HotelGenericoApi.Services.Implementations
 
             return e is not null ? MapToResponse(e) : null;
         }
+
         public async Task<EstanciaResponseDto> CheckInAsync(CheckInDto dto, int? idUsuario)
         {
             var habitacion = await _db.Habitaciones
@@ -88,9 +89,9 @@ namespace HotelGenericoApi.Services.Implementations
                 reserva.Estado = "Check‑in realizado";
             }
 
-            // ---------- NUEVA LÓGICA DE CLIENTE ----------
-            Cliente? cliente = null;         // será el titular de la estancia
-            Cliente? clienteParaComprobante = null; // datos reales a mostrar en el comprobante
+            // ---------- LÓGICA DE CLIENTE ----------
+            Cliente? cliente = null;               // titular de la estancia
+            Cliente? clienteParaComprobante = null; // datos reales para el comprobante
 
             if (dto.IdClienteExistente.HasValue)
             {
@@ -109,14 +110,14 @@ namespace HotelGenericoApi.Services.Implementations
                 }
                 else
                 {
-                    cliente = await _db.Clientes.FirstOrDefaultAsync(
-                        c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
-                    if (cliente == null)
+                    // --- CORRECCIÓN: clientes sin DNI generan un documento único ---
+                    if (string.IsNullOrEmpty(dto.Documento))
                     {
+                        string documentoUnico = "SIN-DNI-" + Guid.NewGuid().ToString("N")[..8];
                         cliente = new Cliente
                         {
                             TipoDocumento = dto.TipoDocumento,
-                            Documento = dto.Documento,
+                            Documento = documentoUnico,
                             Nombres = dto.Nombres,
                             Apellidos = dto.Apellidos,
                             Telefono = dto.Telefono,
@@ -125,21 +126,38 @@ namespace HotelGenericoApi.Services.Implementations
                         _db.Clientes.Add(cliente);
                         await _db.SaveChangesAsync();
                     }
+                    else
+                    {
+                        cliente = await _db.Clientes.FirstOrDefaultAsync(
+                            c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
+                        if (cliente == null)
+                        {
+                            cliente = new Cliente
+                            {
+                                TipoDocumento = dto.TipoDocumento,
+                                Documento = dto.Documento,
+                                Nombres = dto.Nombres,
+                                Apellidos = dto.Apellidos,
+                                Telefono = dto.Telefono,
+                                FechaRegistro = DateTime.UtcNow
+                            };
+                            _db.Clientes.Add(cliente);
+                            await _db.SaveChangesAsync();
+                        }
+                    }
                 }
                 clienteParaComprobante = cliente;
             }
             else
             {
-                // No se guarda cliente → usamos el cliente anónimo como titular
+                // No se guarda cliente → usar el anónimo como titular
                 cliente = await _db.Clientes
                     .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
                     ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
-                // Para el comprobante usaremos los datos reales del formulario (no el anónimo)
-                clienteParaComprobante = null; // lo manejaremos abajo
+                clienteParaComprobante = null;
             }
 
-            // ---------- FIN NUEVA LÓGICA ----------
-
+            // ---------- CÁLCULO DE TARIFA E IGV ----------
             int noches = (int)(dto.FechaCheckoutPrevista.Date - DateTime.UtcNow.Date).TotalDays;
             if (noches < 1) noches = 1;
 
@@ -174,6 +192,7 @@ namespace HotelGenericoApi.Services.Implementations
 
             decimal montoTotal = montoSinIgv + igvCalculado;
 
+            // ---------- CREAR ESTANCIA ----------
             var estancia = new Estancium
             {
                 IdHabitacion = dto.IdHabitacion,
@@ -224,7 +243,7 @@ namespace HotelGenericoApi.Services.Implementations
                 fechaUltimoCambio = DateTime.UtcNow
             });
 
-            // Crear comprobante con los datos correctos
+            // Crear comprobante
             var comprobante = new Comprobante
             {
                 IdEstancia = estancia.IdEstancia,
@@ -257,7 +276,6 @@ namespace HotelGenericoApi.Services.Implementations
 
             return MapToResponse(estancia);
         }
-
 
         public async Task<EstanciaResponseDto> CheckOutAsync(int idEstancia, int? idUsuario)
         {
@@ -386,7 +404,7 @@ namespace HotelGenericoApi.Services.Implementations
                 if (habitacion.Estado == null || !habitacion.Estado.PermiteCheckin)
                     throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "La habitación no está disponible para reserva.");
 
-                // ---------- NUEVA LÓGICA DE CLIENTE ----------
+                // ---------- LÓGICA DE CLIENTE ----------
                 Cliente? cliente = null;
                 Cliente? clienteParaComprobante = null;
 
@@ -407,14 +425,14 @@ namespace HotelGenericoApi.Services.Implementations
                     }
                     else
                     {
-                        cliente = await _db.Clientes.FirstOrDefaultAsync(
-                            c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
-                        if (cliente == null)
+                        // --- CORRECCIÓN: clientes sin DNI generan un documento único ---
+                        if (string.IsNullOrEmpty(dto.Documento))
                         {
+                            string documentoUnico = "SIN-DNI-" + Guid.NewGuid().ToString("N")[..8];
                             cliente = new Cliente
                             {
                                 TipoDocumento = dto.TipoDocumento,
-                                Documento = dto.Documento,
+                                Documento = documentoUnico,
                                 Nombres = dto.Nombres,
                                 Apellidos = dto.Apellidos,
                                 Telefono = dto.Telefono,
@@ -423,12 +441,30 @@ namespace HotelGenericoApi.Services.Implementations
                             _db.Clientes.Add(cliente);
                             await _db.SaveChangesAsync();
                         }
+                        else
+                        {
+                            cliente = await _db.Clientes.FirstOrDefaultAsync(
+                                c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
+                            if (cliente == null)
+                            {
+                                cliente = new Cliente
+                                {
+                                    TipoDocumento = dto.TipoDocumento,
+                                    Documento = dto.Documento,
+                                    Nombres = dto.Nombres,
+                                    Apellidos = dto.Apellidos,
+                                    Telefono = dto.Telefono,
+                                    FechaRegistro = DateTime.UtcNow
+                                };
+                                _db.Clientes.Add(cliente);
+                                await _db.SaveChangesAsync();
+                            }
+                        }
                     }
                     clienteParaComprobante = cliente;
                 }
                 else
                 {
-                    // Sin guardar: usamos el cliente anónimo como titular
                     cliente = await _db.Clientes
                         .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
                         ?? throw new BusinessRuleViolationException(BusinessErrorCode.ClientNotFound, "Cliente anónimo no configurado.");
@@ -485,7 +521,6 @@ namespace HotelGenericoApi.Services.Implementations
                 _db.Reservas.Add(reserva);
                 await _db.SaveChangesAsync();
 
-                // Validación de conflicto excluyendo la propia reserva
                 var conflicto = await _db.Reservas.AnyAsync(r =>
                     r.IdHabitacion == dto.IdHabitacion && r.Estado != "Cancelada" &&
                     r.FechaEntradaPrevista < dto.FechaSalidaPrevista && r.FechaSalidaPrevista > dto.FechaEntradaPrevista
@@ -495,7 +530,6 @@ namespace HotelGenericoApi.Services.Implementations
                     throw new BusinessRuleViolationException(BusinessErrorCode.ReservationConflict,
                         "La habitación ya está reservada en ese rango de fechas.");
 
-                // Si la entrada es hoy, cambiar estado a "En Reserva"
                 if (dto.FechaEntradaPrevista.Date == DateTime.UtcNow.Date)
                 {
                     var estadoEnReserva = await _db.EstadosHabitacion.FirstOrDefaultAsync(e => e.Nombre == "En Reserva");
