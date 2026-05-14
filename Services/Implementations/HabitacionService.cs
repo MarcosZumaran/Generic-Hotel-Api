@@ -167,24 +167,54 @@ namespace HotelGenericoApi.Services.Implementations
                 .Include(h => h.Estado)
                 .Include(h => h.Estancias.Where(e => e.Estado == "Activa"))
                     .ThenInclude(e => e.ClienteTitular)
+                .Include(h => h.Reservas.Where(r => r.Estado == "Confirmada"
+                    && r.FechaEntradaPrevista.Date == DateTime.Today))
+                    .ThenInclude(r => r.Cliente)
                 .AsNoTracking()
                 .ToListAsync();
 
-            return habitaciones.Select(h => new HabitacionEstadoActualDto(
-                h.IdHabitacion,
-                h.NumeroHabitacion,
-                h.Piso,
-                h.TipoHabitacion?.Nombre ?? "",
-                h.PrecioNoche,
-                h.IdEstado,
-                h.Estado?.Nombre ?? "",
-                h.Descripcion,
-                h.Estancias.FirstOrDefault()?.IdEstancia,
-                h.Estancias.FirstOrDefault()?.ClienteTitular != null
-                    ? $"{h.Estancias.First().ClienteTitular!.Nombres} {h.Estancias.First().ClienteTitular!.Apellidos}"
-                    : null,
-                ObtenerAccionesDisponibles(h.Estado, rolUsuario)
-            )).ToList();
+            return habitaciones.Select(h =>
+            {
+                var estanciaActiva = h.Estancias.FirstOrDefault();
+                var reservaHoy = h.Reservas.FirstOrDefault();
+
+                string? clienteHuesped = null;
+                DateTime? fechaCheckin = null;
+                DateTime? fechaCheckoutPrevista = null;
+                DateTime? fechaReservaEntrada = null;
+
+                if (estanciaActiva != null)
+                {
+                    clienteHuesped = estanciaActiva.ClienteTitular != null
+                        ? $"{estanciaActiva.ClienteTitular.Nombres} {estanciaActiva.ClienteTitular.Apellidos}"
+                        : null;
+                    fechaCheckin = estanciaActiva.FechaCheckin;
+                    fechaCheckoutPrevista = estanciaActiva.FechaCheckoutPrevista;
+                }
+                else if (h.IdEstado == 5 && reservaHoy != null)
+                {
+                    // "En Reserva" con reserva hoy
+                    clienteHuesped = $"{reservaHoy.Cliente.Nombres} {reservaHoy.Cliente.Apellidos}";
+                    fechaReservaEntrada = reservaHoy.FechaEntradaPrevista;
+                }
+
+                return new HabitacionEstadoActualDto(
+                    h.IdHabitacion,
+                    h.NumeroHabitacion,
+                    h.Piso,
+                    h.TipoHabitacion?.Nombre ?? "",
+                    h.PrecioNoche,
+                    h.IdEstado,
+                    h.Estado?.Nombre ?? "",
+                    h.Descripcion,
+                    estanciaActiva?.IdEstancia,
+                    clienteHuesped,
+                    ObtenerAccionesDisponibles(h.Estado, rolUsuario),
+                    fechaCheckin,
+                    fechaCheckoutPrevista,
+                    fechaReservaEntrada
+                );
+            }).ToList();
         }
 
         private static List<string> ObtenerAccionesDisponibles(EstadoHabitacion? estado, string? rolUsuario)

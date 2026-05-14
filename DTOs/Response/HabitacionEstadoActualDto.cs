@@ -11,5 +11,8 @@ public sealed record HabitacionEstadoActualDto(
     string? Descripcion,
     int? IdEstanciaActiva,
     string? ClienteHuesped,
-    List<string> AccionesDisponibles
+    List<string> AccionesDisponibles,
+    DateTime? FechaCheckin,
+    DateTime? FechaCheckoutPrevista,
+    DateTime? FechaReservaEntrada
 );
